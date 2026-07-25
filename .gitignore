@@ -1,0 +1,10 @@
+node_modules/
+dist/
+bin/
+.envrc
+.direnv
+.idea/
+.vscode/
+.cursor/
+*.local
+.DS_Store
