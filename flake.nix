@@ -97,15 +97,6 @@
             ];
             shellHook = ''
               ${shellHook}
-              echo ""
-              echo "blockout.js dev shell (v${pkgVersion})"
-              echo "  npm run dev      — Vite dev server"
-              echo "  npm run typecheck — TypeScript check"
-              echo "  npm test         — Vitest unit tests"
-              echo "  npm run lint     — ESLint"
-              echo "  npm run build    — typecheck + production build"
-              echo "  nix flake check  — sandboxed hooks + build"
-              echo ""
             '';
           };
         }
