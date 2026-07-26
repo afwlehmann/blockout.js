@@ -6,12 +6,43 @@ import { Match, type MatchResult } from "./game/match.js";
 import { Rng } from "./game/rng.js";
 import type { MatchConfig, PlayerId } from "./game/types.js";
 import { InputSource, loadInputSettings } from "./input/input.js";
+import { create, mount, type UiElement } from "./ui/dom.js";
 import { Menu } from "./ui/menu.js";
 import { Hud } from "./ui/hud.js";
 import { GameOverScreen, recordScore } from "./ui/gameOver.js";
 import { loadHighScores } from "./ui/highScores.js";
 import { AudioManager } from "./audio/manager.js";
 import type { SfxType } from "./audio/sfx.js";
+
+interface PauseOverlay extends UiElement {
+  readonly el: HTMLElement;
+  readonly cleanup: () => void;
+  dispose(): void;
+}
+
+const createPauseOverlay = (): PauseOverlay => {
+  const el = create("div", "bo-overlay");
+  el.style.background = "rgba(10, 10, 15, 0.7)";
+  const panel = create("div", "bo-panel");
+  panel.style.textAlign = "center";
+  panel.style.padding = "2rem 3rem";
+  const title = create("h1", "bo-title");
+  title.textContent = "Game Paused";
+  title.style.fontSize = "2rem";
+  const hint = create("p", "bo-subtitle");
+  hint.textContent = "Press Esc to resume";
+  panel.appendChild(title);
+  panel.appendChild(hint);
+  el.appendChild(panel);
+  const cleanup = mount(el);
+  return {
+    el,
+    cleanup,
+    dispose(): void {
+      cleanup();
+    },
+  };
+};
 
 interface GameSession {
   readonly config: MatchConfig;
@@ -37,6 +68,7 @@ let currentSession: GameSession | null = null;
 let menu: Menu | null = null;
 let hud: Hud | null = null;
 let gameOverScreen: GameOverScreen | null = null;
+let pauseOverlay: PauseOverlay | null = null;
 let rafId: number | null = null;
 let lastFrame = 0;
 
@@ -193,10 +225,7 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
       const enabled = audio.toggleMusic();
       hud?.setMusicEnabled(enabled);
     } else if (action.kind === "pause") {
-      PLAYERS.forEach((p) => {
-        const e = currentSession?.engines[p];
-        if (e) e.setPaused(!e.state().paused);
-      });
+      togglePause();
     }
   });
 
@@ -226,10 +255,7 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
       hud?.setMusicEnabled(enabled);
     },
     onPause: () => {
-      PLAYERS.forEach((p) => {
-        const e = currentSession?.engines[p];
-        if (e) e.setPaused(!e.state().paused);
-      });
+      togglePause();
     },
   });
   hud.setSoundEnabled(!audio.isSfxMuted());
@@ -242,6 +268,30 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   rafId = requestAnimationFrame(loop);
 };
 
+const togglePause = (): void => {
+  const session = currentSession;
+  if (!session) return;
+  const anyPaused = PLAYERS.some((p) => {
+    const e = session.engines[p];
+    return e ? e.state().paused : false;
+  });
+  const newPaused = !anyPaused;
+  PLAYERS.forEach((p) => {
+    const e = session.engines[p];
+    if (e) e.setPaused(newPaused);
+  });
+  if (newPaused) {
+    audio.pauseMusic();
+    pauseOverlay = createPauseOverlay();
+  } else {
+    if (pauseOverlay) {
+      pauseOverlay.dispose();
+      pauseOverlay = null;
+    }
+    audio.resumeMusic();
+  }
+};
+
 const loop = (now: number): void => {
   const session = currentSession;
   if (!session) return;
@@ -250,7 +300,7 @@ const loop = (now: number): void => {
 
   PLAYERS.forEach((p) => {
     const engine = session.engines[p];
-    if (engine) engine.update(dt);
+    if (engine && !engine.state().paused) engine.update(dt);
   });
 
   session.pitViews.forEach((v, i) => {
@@ -279,6 +329,10 @@ const loop = (now: number): void => {
 };
 
 const showGameOver = (session: GameSession): void => {
+  if (pauseOverlay) {
+    pauseOverlay.dispose();
+    pauseOverlay = null;
+  }
   const e1 = session.engines[1];
   const e2 = session.engines[2];
   const p1State = e1 ? e1.state() : fallbackState();
