@@ -78,7 +78,7 @@ src/
 │   ├── hud.ts      Per-player HUD: score/level/faces, next-piece preview
 │   ├── gameOver.ts Game-over screen: winner, stats, high scores, rematch
 │   ├── highScores.ts  localStorage top-10 score persistence
-│   └── keyRemap.ts Interactive key rebinding panel (P1/P2 tabs)
+│   └── keyRemap.ts Interactive key rebinding panel (side-by-side P1/P2 + global)
 └── main.ts         Game lifecycle: menu → game → game-over → rematch
 ```
 
@@ -115,7 +115,8 @@ src/
 | Exit to Menu | Esc (confirms) |
 | Camera       | Numpad .       |
 
-Keys are remappable via the in-menu Controls panel (P1/P2 tabs).
+Keys are remappable via the in-menu Controls panel (side-by-side P1/P2
+columns + shared Global Controls section).
 
 ## Game features
 
