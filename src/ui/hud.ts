@@ -40,6 +40,7 @@ export class Hud implements UiElement {
   private readonly scoreEls: Map<PlayerId, HTMLElement>;
   private readonly levelEls: Map<PlayerId, HTMLElement>;
   private readonly facesEls: Map<PlayerId, HTMLElement>;
+  private readonly progressBars: Map<PlayerId, HTMLDivElement>;
   private readonly previewCanvases: Map<PlayerId, HTMLCanvasElement>;
   private soundBtn: HTMLButtonElement | null = null;
   private musicBtn: HTMLButtonElement | null = null;
@@ -49,6 +50,7 @@ export class Hud implements UiElement {
     this.scoreEls = new Map();
     this.levelEls = new Map();
     this.facesEls = new Map();
+    this.progressBars = new Map();
     this.previewCanvases = new Map();
     this.el = create("div", "bo-hud");
     this.cleanup = mount(this.el);
@@ -70,8 +72,14 @@ export class Hud implements UiElement {
       scoreVal.textContent = "0";
       const levelLbl = create("div", "bo-hud-label");
       levelLbl.textContent = "Level";
+      const levelRow = create("div", "bo-level-row");
       const levelVal = create("div", "bo-hud-value");
       levelVal.textContent = "1";
+      const levelBar = create("div", "bo-level-bar");
+      const levelBarFill = create("div", "bo-level-bar-fill");
+      levelBar.appendChild(levelBarFill);
+      levelRow.appendChild(levelVal);
+      levelRow.appendChild(levelBar);
       const facesLbl = create("div", "bo-hud-label");
       facesLbl.textContent = "Faces";
       const facesVal = create("div", "bo-hud-value");
@@ -84,7 +92,7 @@ export class Hud implements UiElement {
       card.appendChild(scoreLbl);
       card.appendChild(scoreVal);
       card.appendChild(levelLbl);
-      card.appendChild(levelVal);
+      card.appendChild(levelRow);
       card.appendChild(facesLbl);
       card.appendChild(facesVal);
       card.appendChild(nextLbl);
@@ -93,6 +101,7 @@ export class Hud implements UiElement {
       this.scoreEls.set(p, scoreVal);
       this.levelEls.set(p, levelVal);
       this.facesEls.set(p, facesVal);
+      this.progressBars.set(p, levelBarFill);
       this.previewCanvases.set(p, canvas);
     });
     this.el.appendChild(top);
@@ -130,6 +139,11 @@ export class Hud implements UiElement {
     if (scoreEl) setText(scoreEl, String(state.score));
     if (levelEl) setText(levelEl, String(state.level));
     if (facesEl) setText(facesEl, String(state.faces));
+    const bar = this.progressBars.get(player);
+    if (bar) {
+      const progress = state.faces % 10;
+      bar.style.width = `${String((progress / 10) * 100)}%`;
+    }
     if (canvas) drawPreview(canvas, state.next);
   }
 

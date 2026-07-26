@@ -198,6 +198,30 @@ export const injectStyles = (): void => {
       font-weight: 700;
       color: #f1f5f9;
     }
+    .bo-level-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .bo-hud-player.right .bo-level-row {
+      flex-direction: row-reverse;
+    }
+    .bo-level-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bo-level-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #a78bfa);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+    .bo-hud-player.right .bo-level-bar-fill {
+      margin-left: auto;
+    }
     .bo-icon-btn {
       background: rgba(30, 41, 59, 0.7);
       border: 1px solid rgba(100, 116, 139, 0.2);
