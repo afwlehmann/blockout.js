@@ -22,6 +22,7 @@ const midiToFreq = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
 export class SidSynth {
   private readonly ctx: AudioContext;
   private readonly masterGain: GainNode;
+  private readonly sfxGain: GainNode;
   private readonly filter: BiquadFilterNode;
   private readonly analyser: AnalyserNode;
 
@@ -29,6 +30,9 @@ export class SidSynth {
     this.ctx = ctx;
     this.masterGain = ctx.createGain();
     this.masterGain.gain.value = 0.9;
+
+    this.sfxGain = ctx.createGain();
+    this.sfxGain.gain.value = 0.9;
 
     this.filter = ctx.createBiquadFilter();
     this.filter.type = "lowpass";
@@ -40,10 +44,24 @@ export class SidSynth {
 
     this.masterGain.connect(this.filter);
     this.filter.connect(this.analyser);
+    this.sfxGain.connect(this.analyser);
     this.analyser.connect(ctx.destination);
   }
 
   playVoice(params: VoiceParams, duration: number, startTime?: number): void {
+    this.playVoiceTo(params, duration, startTime, this.masterGain);
+  }
+
+  playSfxVoice(params: VoiceParams, duration: number, startTime?: number): void {
+    this.playVoiceTo(params, duration, startTime, this.sfxGain);
+  }
+
+  private playVoiceTo(
+    params: VoiceParams,
+    duration: number,
+    startTime: number | undefined,
+    dest: AudioNode,
+  ): void {
     const t = startTime ?? this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     osc.type = params.waveform;
@@ -61,13 +79,19 @@ export class SidSynth {
     gain.gain.linearRampToValueAtTime(0, t + duration);
 
     osc.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(dest);
 
     osc.start(t);
     osc.stop(t + duration + 0.05);
   }
 
-  playNoise(duration: number, filterFreq: number, volume: number, startTime?: number): void {
+  playNoise(
+    duration: number,
+    filterFreq: number,
+    volume: number,
+    startTime?: number,
+    filterType?: BiquadFilterType,
+  ): void {
     const t = startTime ?? this.ctx.currentTime;
     const bufferSize = Math.floor(this.ctx.sampleRate * duration);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -80,7 +104,7 @@ export class SidSynth {
     source.buffer = buffer;
 
     const noiseFilter = this.ctx.createBiquadFilter();
-    noiseFilter.type = "lowpass";
+    noiseFilter.type = filterType ?? "lowpass";
     noiseFilter.frequency.setValueAtTime(filterFreq, t);
     noiseFilter.frequency.exponentialRampToValueAtTime(
       Math.max(100, filterFreq * 0.1),
@@ -94,7 +118,7 @@ export class SidSynth {
 
     source.connect(noiseFilter);
     noiseFilter.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(this.sfxGain);
 
     source.start(t);
     source.stop(t + duration);

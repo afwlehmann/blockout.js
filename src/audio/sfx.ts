@@ -83,7 +83,7 @@ export class Sfx {
 
   private move(): void {
     const t = this.synth.currentTime;
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "square",
         frequency: 440,
@@ -96,7 +96,7 @@ export class Sfx {
       0.03,
       t,
     );
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "square",
         frequency: 880,
@@ -117,7 +117,7 @@ export class Sfx {
     [0, 0.02, 0.04].forEach((offset, i) => {
       const freqs = [523, 659, 784];
       const freq = freqs[i] ?? 523;
-      this.synth.playVoice(
+      this.synth.playSfxVoice(
         {
           waveform: "square",
           frequency: freq,
@@ -135,7 +135,7 @@ export class Sfx {
 
   private drop(): void {
     const t = this.synth.currentTime;
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "sawtooth",
         frequency: 150,
@@ -153,7 +153,7 @@ export class Sfx {
 
   private lock(): void {
     const t = this.synth.currentTime;
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "square",
         frequency: 100,
@@ -177,7 +177,7 @@ export class Sfx {
 
     chordType.forEach((interval, i) => {
       const freq = midiToFreq(baseMidi + interval);
-      this.synth.playVoice(
+      this.synth.playSfxVoice(
         {
           waveform: "triangle",
           frequency: freq,
@@ -192,7 +192,7 @@ export class Sfx {
       );
     });
 
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "sawtooth",
         frequency: midiToFreq(baseMidi - 12),
@@ -217,7 +217,7 @@ export class Sfx {
     const t = this.synth.currentTime;
     [0, 4, 7, 12].forEach((interval, i) => {
       const freq = midiToFreq(ROOT_MIDI + interval);
-      this.synth.playVoice(
+      this.synth.playSfxVoice(
         {
           waveform: "square",
           frequency: freq,
@@ -235,7 +235,7 @@ export class Sfx {
 
   private attack(): void {
     const t = this.synth.currentTime;
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "sawtooth",
         frequency: 80,
@@ -249,7 +249,7 @@ export class Sfx {
       t,
     );
     this.synth.playNoise(0.4, 1500, 0.2, t);
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "square",
         frequency: 60,
@@ -269,7 +269,7 @@ export class Sfx {
     const descending = [0, -2, -4, -7, -12];
     descending.forEach((interval, i) => {
       const freq = midiToFreq(ROOT_MIDI + interval);
-      this.synth.playVoice(
+      this.synth.playSfxVoice(
         {
           waveform: "triangle",
           frequency: freq,
@@ -290,7 +290,7 @@ export class Sfx {
     const t = this.synth.currentTime;
     const layers = Math.max(1, intensity);
     const baseFreq = 60 + layers * 10;
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "sine",
         frequency: baseFreq,
@@ -303,7 +303,7 @@ export class Sfx {
       0.25,
       t,
     );
-    this.synth.playVoice(
+    this.synth.playSfxVoice(
       {
         waveform: "sawtooth",
         frequency: baseFreq * 0.5,
