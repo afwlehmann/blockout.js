@@ -88,11 +88,10 @@ export class GameOverScreen implements UiElement {
       });
     }
 
-    const buttons = create("div", "bo-options");
+    const buttons = create("div", "bo-options bo-gameover-buttons");
     buttons.style.marginTop = "1.5rem";
     const rematch = create("button", "bo-btn bo-btn-primary");
     rematch.textContent = "Rematch";
-    rematch.style.width = "auto";
     rematch.addEventListener("click", () => {
       this.actionHandler("rematch");
     });

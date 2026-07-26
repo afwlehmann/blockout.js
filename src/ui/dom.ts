@@ -131,6 +131,14 @@ export const injectStyles = (): void => {
     .bo-btn-primary:hover {
       filter: brightness(1.1);
     }
+    .bo-gameover-buttons .bo-btn,
+    .bo-gameover-buttons .bo-btn-primary {
+      flex: 1 1 0;
+      width: auto;
+      padding: 0.6rem 1.5rem;
+      font-size: 1rem;
+      margin-top: 0;
+    }
     .bo-hud {
       position: absolute;
       top: 0; left: 0; right: 0;
