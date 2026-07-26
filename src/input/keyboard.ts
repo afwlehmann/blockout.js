@@ -69,9 +69,9 @@ export const PLAYER2_LAYOUT: KeyBinding = {
   pause: ["KeyP"],
   exitToMenu: ["Escape"],
   cameraToggle: ["NumpadDecimal"],
-  toggleSound: ["KeyN"],
+  toggleSound: ["KeyO"],
   toggleMusic: ["KeyM"],
-  toggleGhost: ["KeyH"],
+  toggleGhost: ["KeyG"],
 };
 
 const moveAction = (dx: number, dz: number): PlayerAction => ({
