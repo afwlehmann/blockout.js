@@ -78,3 +78,48 @@ describe("rotations", () => {
     expect(r).toEqual(v);
   });
 });
+
+describe("transition table", () => {
+  it("every transition lands on a valid orientation", () => {
+    built.forEach((p) => {
+      const { orientations, transitions } = p;
+      orientations.forEach((_o, fromIdx) => {
+        const row = transitions[fromIdx];
+        expect(row).toBeDefined();
+        if (!row) return;
+        row.forEach((target) => {
+          expect(target).toBeGreaterThanOrEqual(0);
+          expect(target).toBeLessThan(orientations.length);
+        });
+      });
+    });
+  });
+
+  it("four rotations around any axis return to the starting orientation", () => {
+    const axes: readonly ("x" | "y" | "z")[] = ["x", "y", "z"];
+    const dirs: readonly (1 | -1)[] = [1, -1];
+    built.forEach((p) => {
+      const { transitions } = p;
+      const col = (axis: "x" | "y" | "z", dir: 1 | -1): number =>
+        axis === "x" ? (dir === 1 ? 0 : 1) : axis === "y" ? (dir === 1 ? 2 : 3) : dir === 1 ? 4 : 5;
+      transitions.forEach((row, fromIdx) => {
+        axes.forEach((axis) => {
+          dirs.forEach((dir) => {
+            const c = col(axis, dir);
+            const step1 = row[c] ?? 0;
+            const row2 = transitions[step1];
+            if (!row2) return;
+            const step2 = row2[c] ?? 0;
+            const row3 = transitions[step2];
+            if (!row3) return;
+            const step3 = row3[c] ?? 0;
+            const row4 = transitions[step3];
+            if (!row4) return;
+            const step4 = row4[c] ?? 0;
+            expect(step4).toBe(fromIdx);
+          });
+        });
+      });
+    });
+  });
+});

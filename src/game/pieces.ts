@@ -28,40 +28,29 @@ const COMBO_INDEXES = Array.from({ length: 4 * 4 * 4 }, (_, i) => ({
   z: i % 4,
 }));
 
-interface Accumulator {
-  current: Vec3[];
-  orientations: Orientation[];
-  seen: Set<string>;
-}
-
 const generateOrientations = (cells: readonly Vec3[]): Orientation[] => {
-  const initial: Accumulator = {
-    current: [...cells],
-    orientations: [],
-    seen: new Set<string>(),
-  };
-  const result = COMBO_INDEXES.reduce<Accumulator>((acc, { x, y, z }) => {
-    const applied: Vec3[] = Array.from({ length: z + 1 }, () => rotateZ).reduce(
+  const seen = new Set<string>();
+  const orientations: Orientation[] = [];
+  COMBO_INDEXES.forEach(({ x, y, z }) => {
+    const applied = Array.from({ length: z + 1 }, () => rotateZ).reduce(
       (c, fn) => apply(fn, c),
-      acc.current,
+      [...cells],
     );
-    const withY: Vec3[] = Array.from({ length: y + 1 }, () => rotateY).reduce(
+    const withY = Array.from({ length: y + 1 }, () => rotateY).reduce(
       (c, fn) => apply(fn, c),
       applied,
     );
-    const withX: Vec3[] = Array.from({ length: x + 1 }, () => rotateX).reduce(
+    const withX = Array.from({ length: x + 1 }, () => rotateX).reduce(
       (c, fn) => apply(fn, c),
       withY,
     );
-    const next = { ...acc, current: withX };
-    const norm = normalize(next.current);
-    if (!next.seen.has(norm.key)) {
-      next.orientations.push({ cells: norm.cells, key: norm.key });
-      next.seen.add(norm.key);
+    const norm = normalize(withX);
+    if (!seen.has(norm.key)) {
+      orientations.push({ cells: norm.cells, key: norm.key });
+      seen.add(norm.key);
     }
-    return next;
-  }, initial);
-  return result.orientations;
+  });
+  return orientations;
 };
 
 const AXES: readonly Axis[] = ["x", "y", "z"];
