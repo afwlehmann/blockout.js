@@ -11,7 +11,8 @@ export type SfxType =
   | "clear4"
   | "levelUp"
   | "attack"
-  | "gameOver";
+  | "gameOver"
+  | "thud";
 
 const MINOR_CHORD: readonly [number, number, number] = [0, 3, 7];
 const MAJOR_CHORD: readonly [number, number, number] = [0, 4, 7];
@@ -71,6 +72,9 @@ export class Sfx {
       case "attack":
         this.attack();
         break;
+      case "thud":
+        this.thud(intensity);
+        break;
       case "gameOver":
         this.gameOver();
         break;
@@ -82,33 +86,51 @@ export class Sfx {
     this.synth.playVoice(
       {
         waveform: "square",
-        frequency: 220,
+        frequency: 440,
         attack: 0.001,
-        decay: 0.02,
+        decay: 0.015,
         sustain: 0,
-        release: 0.01,
-        volume: 0.05,
+        release: 0.008,
+        volume: 0.04,
       },
-      0.04,
+      0.03,
+      t,
+    );
+    this.synth.playVoice(
+      {
+        waveform: "square",
+        frequency: 880,
+        attack: 0.001,
+        decay: 0.01,
+        sustain: 0,
+        release: 0.005,
+        volume: 0.02,
+        detune: 3,
+      },
+      0.02,
       t,
     );
   }
 
   private rotate(): void {
     const t = this.synth.currentTime;
-    this.synth.playVoice(
-      {
-        waveform: "triangle",
-        frequency: 330,
-        attack: 0.001,
-        decay: 0.04,
-        sustain: 0,
-        release: 0.02,
-        volume: 0.08,
-      },
-      0.08,
-      t,
-    );
+    [0, 0.02, 0.04].forEach((offset, i) => {
+      const freqs = [523, 659, 784];
+      const freq = freqs[i] ?? 523;
+      this.synth.playVoice(
+        {
+          waveform: "square",
+          frequency: freq,
+          attack: 0.001,
+          decay: 0.02,
+          sustain: 0,
+          release: 0.01,
+          volume: 0.05,
+        },
+        0.04,
+        t + offset,
+      );
+    });
   }
 
   private drop(): void {
@@ -262,5 +284,38 @@ export class Sfx {
       );
     });
     this.synth.playNoise(0.8, 300, 0.15, t);
+  }
+
+  private thud(intensity: number): void {
+    const t = this.synth.currentTime;
+    const layers = Math.max(1, intensity);
+    const baseFreq = 60 + layers * 10;
+    this.synth.playVoice(
+      {
+        waveform: "sine",
+        frequency: baseFreq,
+        attack: 0.001,
+        decay: 0.15,
+        sustain: 0,
+        release: 0.1,
+        volume: 0.3,
+      },
+      0.25,
+      t,
+    );
+    this.synth.playVoice(
+      {
+        waveform: "sawtooth",
+        frequency: baseFreq * 0.5,
+        attack: 0.001,
+        decay: 0.08,
+        sustain: 0,
+        release: 0.05,
+        volume: 0.1,
+      },
+      0.15,
+      t,
+    );
+    this.synth.playNoise(0.15, 200 + layers * 50, 0.12, t);
   }
 }

@@ -22,10 +22,19 @@ export interface ActivePiece {
 }
 
 export interface EngineEvent {
-  readonly type: "lock" | "clear" | "blockOut" | "gameOver" | "levelUp" | "spawn";
+  readonly type:
+    | "lock"
+    | "clear"
+    | "blockOut"
+    | "gameOver"
+    | "levelUp"
+    | "spawn"
+    | "move"
+    | "rotate";
   readonly clearedLayers?: readonly number[];
   readonly blockOut?: boolean;
   readonly level?: number;
+  readonly preClearGrid?: readonly number[];
 }
 
 export interface EngineState {
@@ -202,15 +211,33 @@ export class PlayerEngine {
     }
     if (this.gameOver || this.paused) return [];
     switch (action.kind) {
-      case "move":
-        this.tryMove(action.dx, 0, action.dz);
+      case "move": {
+        const moved = this.tryMove(action.dx, 0, action.dz);
+        if (moved) {
+          const ev: EngineEvent = { type: "move" };
+          this.emit(ev);
+          return [ev];
+        }
         return [];
-      case "rotate":
-        this.tryRotate(action.axis, action.dir);
+      }
+      case "rotate": {
+        const rotated = this.tryRotate(action.axis, action.dir);
+        if (rotated) {
+          const ev: EngineEvent = { type: "rotate" };
+          this.emit(ev);
+          return [ev];
+        }
         return [];
-      case "softDrop":
-        this.tryMove(0, -1, 0);
+      }
+      case "softDrop": {
+        const moved = this.tryMove(0, -1, 0);
+        if (moved) {
+          const ev: EngineEvent = { type: "move" };
+          this.emit(ev);
+          return [ev];
+        }
         return [];
+      }
       case "hardDrop": {
         const events = this.hardDrop();
         events.forEach((e) => {
@@ -290,6 +317,7 @@ export class PlayerEngine {
     if (!this.active) return [];
     const orientations = this.pieceOrientations(this.active.def).orientations;
     const cells = orientations[this.active.orientationIndex]?.cells ?? [];
+    const preClearGrid = this.pit.snapshot();
     const lockResult: LockResult = this.pit.lock(this.active.origin, cells, this.active.def.color);
     this.cubes += cells.length;
     this.active = null;
@@ -300,6 +328,7 @@ export class PlayerEngine {
       events.push({
         type: "clear",
         clearedLayers: lockResult.clearedLayers,
+        preClearGrid,
       });
       const newLevel = this.startLevel + Math.floor(this.faces / LEVEL_FACES_PER_LEVEL);
       if (newLevel > this.level) {

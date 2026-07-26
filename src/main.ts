@@ -54,6 +54,10 @@ const startMenu = (): void => {
 
 const sfxForEngineEvent = (ev: EngineEvent): { type: SfxType; intensity: number } | null => {
   switch (ev.type) {
+    case "move":
+      return { type: "move", intensity: 0 };
+    case "rotate":
+      return { type: "rotate", intensity: 0 };
     case "lock":
       return { type: "lock", intensity: 0 };
     case "clear": {
@@ -73,10 +77,18 @@ const sfxForEngineEvent = (ev: EngineEvent): { type: SfxType; intensity: number 
   }
 };
 
-const wireEngineEvents = (engine: PlayerEngine): void => {
+const wireEngineEvents = (engine: PlayerEngine, pitView: PitView): void => {
   engine.on((ev) => {
     const sfx = sfxForEngineEvent(ev);
     if (sfx) audio.playSfx(sfx.type, sfx.intensity);
+    if (ev.type === "clear" && ev.clearedLayers && ev.preClearGrid) {
+      const postGrid = engine.pit.snapshot();
+      const layers = ev.clearedLayers.length;
+      pitView.onSlideComplete = () => {
+        audio.playSfx("thud", layers);
+      };
+      pitView.triggerClear(ev.clearedLayers, ev.preClearGrid, postGrid);
+    }
   });
 };
 
@@ -98,7 +110,8 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
     });
     PLAYERS.forEach((p) => {
       const e = engines[p];
-      if (e) wireEngineEvents(e);
+      const v = pitViews[p - 1];
+      if (e && v) wireEngineEvents(e, v);
     });
     m.on((ev) => {
       if (ev.type === "attack") {
@@ -141,10 +154,10 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   } else {
     const engine = new PlayerEngine(config, new Rng(Math.floor(Math.random() * 1000000)));
     engines[1] = engine;
-    wireEngineEvents(engine);
     const view = new PitView(config.pit, 0);
     scene.add(view.group);
     pitViews.push(view);
+    wireEngineEvents(engine, view);
     cleanups.push(() => {
       scene.remove(view.group);
       view.dispose();
@@ -243,6 +256,7 @@ const loop = (now: number): void => {
   session.pitViews.forEach((v, i) => {
     const engine = session.engines[PLAYERS[i] ?? 1];
     if (engine) v.update(engine);
+    v.tick(dt);
   });
 
   session.layout.render(renderer, scene, container.clientWidth, container.clientHeight);

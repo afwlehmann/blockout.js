@@ -76,6 +76,47 @@ export class BlockMesh {
     colorAttr.needsUpdate = true;
   }
 
+  updateWithSlide(
+    postGrid: readonly number[],
+    preGrid: readonly number[],
+    colorPalette: readonly THREE.Color[],
+    clearedLayers: readonly number[],
+    slideProgress: number,
+  ): void {
+    let count = 0;
+    const colorAttr = this.mesh.instanceColor;
+    if (!colorAttr) return;
+
+    const minCleared = Math.min(...clearedLayers);
+    const slideOffset = clearedLayers.length * (1 - slideProgress);
+
+    postGrid.forEach((value, i) => {
+      if (value === 0 || count >= this.capacity) return;
+      const x = i % this.width;
+      const remainder = Math.floor(i / this.width);
+      const z = remainder % this.depth;
+      const y = Math.floor(remainder / this.depth);
+
+      const renderY = y >= minCleared ? y + slideOffset : y;
+
+      this.dummy.position.set(x, renderY, z);
+      this.dummy.updateMatrix();
+      this.mesh.setMatrixAt(count, this.dummy.matrix);
+
+      const color = colorPalette[value - 1] ?? colorPalette[0];
+      if (color) {
+        colorAttr.setXYZ(count, color.r, color.g, color.b);
+      }
+      count += 1;
+    });
+
+    void preGrid;
+
+    this.mesh.count = count;
+    this.mesh.instanceMatrix.needsUpdate = true;
+    colorAttr.needsUpdate = true;
+  }
+
   dispose(): void {
     this.mesh.geometry.dispose();
     const mat = this.mesh.material;

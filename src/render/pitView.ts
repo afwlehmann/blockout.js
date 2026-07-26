@@ -1,13 +1,32 @@
 import * as THREE from "three";
 import type { PlayerEngine } from "../game/engine.js";
 import type { PitConfig } from "../game/types.js";
-import { BlockMesh } from "./blockMesh.js";
+import { BlockMesh, blockGeometry } from "./blockMesh.js";
 import { PieceView } from "./pieceView.js";
 
 const PALETTE: readonly number[] = [
   0x38bdf8, 0xfbbf24, 0x4ade80, 0xa78bfa, 0xf472b6, 0xfb7185, 0x34d399, 0x818cf8, 0x22d3ee,
   0xfacc15, 0x60a5fa, 0xfb923c,
 ];
+
+interface Particle {
+  readonly mesh: THREE.Mesh;
+  readonly velocity: THREE.Vector3;
+  life: number;
+  maxLife: number;
+}
+
+interface SlideAnim {
+  active: boolean;
+  elapsed: number;
+  duration: number;
+  clearedLayers: readonly number[];
+  preGrid: readonly number[];
+  postGrid: readonly number[];
+}
+
+const PARTICLE_COUNT = 8;
+const SLIDE_DURATION = 350;
 
 export class PitView {
   readonly group: THREE.Group;
@@ -21,6 +40,9 @@ export class PitView {
   private usingSideCamera = false;
   private crazyMode = false;
   private crazyTime = 0;
+  private readonly particles: Particle[] = [];
+  private slideAnim: SlideAnim | null = null;
+  onSlideComplete: (() => void) | null = null;
 
   constructor(config: PitConfig, originX: number) {
     this.config = config;
@@ -119,13 +141,147 @@ export class PitView {
     }
   }
 
+  triggerClear(
+    clearedLayers: readonly number[],
+    preGrid: readonly number[],
+    postGrid: readonly number[],
+  ): void {
+    this.spawnExplosion(clearedLayers, preGrid);
+    this.slideAnim = {
+      active: true,
+      elapsed: 0,
+      duration: SLIDE_DURATION,
+      clearedLayers,
+      preGrid,
+      postGrid,
+    };
+  }
+
+  private spawnExplosion(clearedLayers: readonly number[], grid: readonly number[]): void {
+    const { width: w, depth: d } = this.config;
+    clearedLayers.forEach((y) => {
+      for (let x = 0; x < w; x++) {
+        for (let z = 0; z < d; z++) {
+          const idx = x + w * (z + d * y);
+          const colorIdx = grid[idx] ?? 0;
+          if (colorIdx === 0) continue;
+          const colorHex = PALETTE[colorIdx - 1] ?? PALETTE[0] ?? 0xffffff;
+          const color = new THREE.Color(colorHex);
+
+          for (let p = 0; p < PARTICLE_COUNT; p++) {
+            const geom = blockGeometry.clone();
+            const mat = new THREE.MeshStandardMaterial({
+              color,
+              emissive: color,
+              emissiveIntensity: 0.5,
+              transparent: true,
+              opacity: 1.0,
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.scale.setScalar(0.3 + Math.random() * 0.3);
+            mesh.position.set(x, y, z);
+            mesh.castShadow = false;
+
+            const angle = Math.random() * Math.PI * 2;
+            const upward = 2 + Math.random() * 4;
+            const outward = 1 + Math.random() * 3;
+            const velocity = new THREE.Vector3(
+              Math.cos(angle) * outward,
+              upward,
+              Math.sin(angle) * outward,
+            );
+
+            this.group.add(mesh);
+            this.particles.push({
+              mesh,
+              velocity,
+              life: 0,
+              maxLife: 0.4 + Math.random() * 0.3,
+            });
+          }
+        }
+      }
+    });
+  }
+
+  private updateParticles(dt: number): void {
+    const dtSec = dt / 1000;
+    const gravity = 12;
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      if (!p) continue;
+      p.life += dtSec;
+      if (p.life >= p.maxLife) {
+        this.group.remove(p.mesh);
+        p.mesh.geometry.dispose();
+        const mat = p.mesh.material;
+        if (Array.isArray(mat)) {
+          mat.forEach((m) => {
+            m.dispose();
+          });
+        } else {
+          mat.dispose();
+        }
+        this.particles.splice(i, 1);
+        continue;
+      }
+      p.velocity.y -= gravity * dtSec;
+      p.mesh.position.x += p.velocity.x * dtSec;
+      p.mesh.position.y += p.velocity.y * dtSec;
+      p.mesh.position.z += p.velocity.z * dtSec;
+      const lifeRatio = p.life / p.maxLife;
+      const mat = p.mesh.material;
+      if (mat instanceof THREE.MeshStandardMaterial) {
+        mat.opacity = 1.0 - lifeRatio;
+      }
+      p.mesh.rotation.x += dtSec * 8;
+      p.mesh.rotation.z += dtSec * 6;
+    }
+  }
+
+  private updateSlide(dt: number): void {
+    if (!this.slideAnim?.active) return;
+    this.slideAnim.elapsed += dt;
+    const progress = Math.min(this.slideAnim.elapsed / this.slideAnim.duration, 1.0);
+
+    if (progress >= 1.0) {
+      this.slideAnim.active = false;
+      this.slideAnim = null;
+      if (this.onSlideComplete) {
+        this.onSlideComplete();
+      }
+    }
+  }
+
+  isAnimating(): boolean {
+    return (this.slideAnim?.active ?? false) || this.particles.length > 0;
+  }
+
+  tick(dt: number): void {
+    this.updateParticles(dt);
+    this.updateSlide(dt);
+  }
+
   get activeCamera(): THREE.PerspectiveCamera {
     return this.usingSideCamera ? this.sideCamera : this.camera;
   }
 
   update(engine: PlayerEngine): void {
     const grid = engine.pit.snapshot();
-    this.blockMesh.update(grid, this.colors);
+
+    if (this.slideAnim?.active) {
+      const { preGrid, postGrid, clearedLayers } = this.slideAnim;
+      void preGrid;
+      this.blockMesh.updateWithSlide(
+        postGrid,
+        preGrid,
+        this.colors,
+        clearedLayers,
+        this.slideAnim.elapsed / this.slideAnim.duration,
+      );
+    } else {
+      this.blockMesh.update(grid, this.colors);
+    }
 
     if (this.crazyMode) {
       const dt = 0.016;
