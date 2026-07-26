@@ -31,6 +31,7 @@ const SLIDE_DURATION = 350;
 export class PitView {
   readonly group: THREE.Group;
   readonly camera: THREE.PerspectiveCamera;
+  readonly sideCameras: readonly THREE.OrthographicCamera[];
   private readonly config: PitConfig;
   private readonly blockMesh: BlockMesh;
   private readonly colors: THREE.Color[];
@@ -54,6 +55,7 @@ export class PitView {
     const aspect = 1;
     this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 200);
     this.sideCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 200);
+    this.sideCameras = this.buildSideCameras();
     this.positionCameras();
 
     this.blockMesh = new BlockMesh(config, PALETTE.length);
@@ -64,6 +66,30 @@ export class PitView {
 
     this.walls = this.buildWalls();
     this.group.add(this.walls);
+  }
+
+  private buildSideCameras(): THREE.OrthographicCamera[] {
+    const { width: w, depth: d, height: h } = this.config;
+    const cx = this.group.position.x + (w - 1) / 2;
+    const cy = h / 2;
+    const cz = (d - 1) / 2;
+    const halfW = w / 2 + 0.5;
+    const halfH = h / 2 + 0.5;
+    const dist = Math.max(w, d, h) * 2;
+
+    const make = (x: number, y: number, z: number): THREE.OrthographicCamera => {
+      const cam = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.1, dist * 2);
+      cam.position.set(x, y, z);
+      cam.lookAt(cx, cy, cz);
+      return cam;
+    };
+
+    return [
+      make(cx, cy, cz + dist),
+      make(cx, cy, cz - dist),
+      make(cx + dist, cy, cz),
+      make(cx - dist, cy, cz),
+    ];
   }
 
   private positionCameras(): void {
@@ -367,6 +393,20 @@ export class PitView {
     this.camera.updateProjectionMatrix();
     this.sideCamera.aspect = aspect;
     this.sideCamera.updateProjectionMatrix();
+  }
+
+  setSideAspect(aspect: number): void {
+    const { width: w, depth: d, height: h } = this.config;
+    const halfH = h / 2 + 0.5;
+    this.sideCameras.forEach((cam) => {
+      const isFrontBack = cam.position.z !== this.group.position.z + (d - 1) / 2;
+      const horiz = isFrontBack ? (w / 2 + 0.5) * aspect : (d / 2 + 0.5) * aspect;
+      cam.left = -horiz;
+      cam.right = horiz;
+      cam.top = halfH;
+      cam.bottom = -halfH;
+      cam.updateProjectionMatrix();
+    });
   }
 
   dispose(): void {
