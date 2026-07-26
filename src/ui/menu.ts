@@ -1,8 +1,11 @@
-import type { MatchConfig, PieceSet, Difficulty, PitConfig } from "../game/types.js";
+import type { MatchConfig, PieceSet, Difficulty, PitConfig, PlayerId } from "../game/types.js";
 import { create, mount, injectStyles, type UiElement } from "./dom.js";
+import { KeyRemap } from "./keyRemap.js";
+import { loadInputSettings, saveInputSettings } from "../input/input.js";
 
 export interface MenuSelection {
   readonly config: MatchConfig;
+  readonly crazyMode: boolean;
 }
 
 export type StartHandler = (selection: MenuSelection) => void;
@@ -17,6 +20,7 @@ interface MenuState {
   height: number;
   startLevel: number;
   targetFaces: number;
+  crazyMode: boolean;
 }
 
 const PRESETS: Record<string, { pit: PitConfig; set: PieceSet }> = {
@@ -35,6 +39,7 @@ const defaultState = (): MenuState => ({
   height: 12,
   startLevel: 1,
   targetFaces: 10,
+  crazyMode: false,
 });
 
 const toConfig = (state: MenuState): MatchConfig => ({
@@ -51,6 +56,9 @@ export class Menu implements UiElement {
   private readonly cleanup: () => void;
   private state: MenuState;
   private startHandler: StartHandler | null = null;
+  private remapPanel: KeyRemap | null = null;
+  private remapPlayer: PlayerId = 1;
+  private showControls = false;
 
   constructor() {
     injectStyles();
@@ -65,10 +73,15 @@ export class Menu implements UiElement {
   }
 
   dispose(): void {
+    if (this.remapPanel) this.remapPanel.dispose();
     this.cleanup();
   }
 
   private render(): void {
+    if (this.remapPanel) {
+      this.remapPanel.dispose();
+      this.remapPanel = null;
+    }
     this.el.innerHTML = "";
     const panel = create("div", "bo-panel");
     panel.appendChild(this.title());
@@ -79,6 +92,8 @@ export class Menu implements UiElement {
       panel.appendChild(this.section("Pit Size", this.pitControls()));
     }
     panel.appendChild(this.section("Difficulty", this.difficultyButtons()));
+    panel.appendChild(this.section("Crazy Mode", this.crazyButtons()));
+    panel.appendChild(this.controlsSection());
     panel.appendChild(this.startButton());
     this.el.appendChild(panel);
   }
@@ -204,12 +219,71 @@ export class Menu implements UiElement {
     return wrap;
   }
 
+  private crazyButtons(): HTMLElement {
+    return this.optionGroup(
+      ["off", "on"],
+      this.state.crazyMode ? "on" : "off",
+      (val) => {
+        this.state = { ...this.state, crazyMode: val === "on" };
+        this.render();
+      },
+      { off: "Off", on: "Crazy!" },
+    );
+  }
+
+  private controlsSection(): HTMLElement {
+    const wrap = create("div", "bo-section");
+    const lbl = create("div", "bo-section-label");
+    lbl.textContent = "Controls";
+    wrap.appendChild(lbl);
+
+    const toggleBtn = create("button", "bo-btn");
+    toggleBtn.textContent = this.showControls ? "Hide Controls" : "Show Controls";
+    toggleBtn.addEventListener("click", () => {
+      this.showControls = !this.showControls;
+      this.render();
+    });
+    wrap.appendChild(toggleBtn);
+
+    if (this.showControls) {
+      const settings = loadInputSettings();
+      const tabs = create("div", "bo-tabs");
+      ([1, 2] as const).forEach((p) => {
+        const tab = create("button", "bo-tab");
+        tab.textContent = `Player ${p === 1 ? "1" : "2"}`;
+        if (p === this.remapPlayer) tab.classList.add("active");
+        tab.addEventListener("click", () => {
+          this.remapPlayer = p;
+          this.render();
+        });
+        tabs.appendChild(tab);
+      });
+      wrap.appendChild(tabs);
+
+      this.remapPanel = new KeyRemap(
+        this.remapPlayer,
+        settings.bindings[this.remapPlayer],
+        (player, binding) => {
+          const current = loadInputSettings();
+          const updated = {
+            ...current,
+            bindings: { ...current.bindings, [player]: binding },
+          };
+          saveInputSettings(updated);
+        },
+      );
+      wrap.appendChild(this.remapPanel.el);
+    }
+
+    return wrap;
+  }
+
   private startButton(): HTMLElement {
     const btn = create("button", "bo-btn bo-btn-primary");
     btn.textContent = "Start Game";
     btn.addEventListener("click", () => {
       if (this.startHandler) {
-        this.startHandler({ config: toConfig(this.state) });
+        this.startHandler({ config: toConfig(this.state), crazyMode: this.state.crazyMode });
       }
     });
     return btn;

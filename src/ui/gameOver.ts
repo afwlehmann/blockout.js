@@ -1,13 +1,15 @@
-import type { MatchConfig } from "../game/types.js";
+import type { MatchConfig, PlayerId } from "../game/types.js";
 import type { EngineState } from "../game/engine.js";
 import type { MatchResult } from "../game/match.js";
 import { create, mount, type UiElement } from "./dom.js";
+import { saveHighScore, type ScoreEntry } from "./highScores.js";
 
 export interface GameOverData {
   readonly mode: "1p" | "2p";
   readonly result: MatchResult | null;
   readonly states: Readonly<Record<1 | 2, EngineState>>;
   readonly config: MatchConfig;
+  readonly highScores: readonly ScoreEntry[];
 }
 
 export type GameOverAction = "rematch" | "menu";
@@ -67,6 +69,25 @@ export class GameOverScreen implements UiElement {
       panel.appendChild(this.statRow("Cubes", String(state.cubes)));
     });
 
+    if (data.highScores.length > 0) {
+      const hsTitle = create("div", "bo-result-label");
+      hsTitle.textContent = "High Scores";
+      hsTitle.style.marginTop = "1.5rem";
+      panel.appendChild(hsTitle);
+      data.highScores.slice(0, 5).forEach((entry, i) => {
+        const row = create("div", "bo-result-row");
+        const lbl = create("span", "bo-result-label");
+        const modeTag = entry.mode === "1p" ? "1P" : "2P";
+        lbl.textContent = `${String(i + 1)}. ${modeTag} ${String(entry.score)}`;
+        const val = create("span", "bo-result-val");
+        const date = new Date(entry.date);
+        val.textContent = `${String(date.getMonth() + 1)}/${String(date.getDate())}`;
+        row.appendChild(lbl);
+        row.appendChild(val);
+        panel.appendChild(row);
+      });
+    }
+
     const buttons = create("div", "bo-options");
     buttons.style.marginTop = "1.5rem";
     const rematch = create("button", "bo-btn bo-btn-primary");
@@ -98,3 +119,19 @@ export class GameOverScreen implements UiElement {
     return row;
   }
 }
+
+export const recordScore = (
+  state: EngineState,
+  mode: MatchConfig["mode"],
+  winner: PlayerId | null,
+): ScoreEntry => {
+  const entry: ScoreEntry = {
+    date: Date.now(),
+    score: state.score,
+    level: state.level,
+    faces: state.faces,
+    mode,
+    winner,
+  };
+  return saveHighScore(entry)[0] ?? entry;
+};

@@ -212,6 +212,60 @@ export const injectStyles = (): void => {
       font-weight: 700;
       margin-bottom: 1rem;
     }
+    .bo-preview {
+      display: block;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 6px;
+      margin-top: 0.25rem;
+    }
+    .bo-remap {
+      margin-top: 1rem;
+    }
+    .bo-remap-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+    .bo-remap-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .bo-remap-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    .bo-remap-btn {
+      min-width: 80px;
+      text-align: center;
+      font-size: 0.8rem;
+      padding: 0.3rem 0.5rem;
+    }
+    .bo-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .bo-tab {
+      background: rgba(51, 65, 85, 0.4);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      color: #64748b;
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+    }
+    .bo-tab.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #f1f5f9;
+    }
   `;
   document.head.appendChild(style);
 };

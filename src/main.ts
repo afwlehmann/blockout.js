@@ -8,7 +8,8 @@ import type { MatchConfig, PlayerId } from "./game/types.js";
 import { InputSource, loadInputSettings } from "./input/input.js";
 import { Menu } from "./ui/menu.js";
 import { Hud } from "./ui/hud.js";
-import { GameOverScreen } from "./ui/gameOver.js";
+import { GameOverScreen, recordScore } from "./ui/gameOver.js";
+import { loadHighScores } from "./ui/highScores.js";
 import { AudioManager } from "./audio/manager.js";
 import type { SfxType } from "./audio/sfx.js";
 
@@ -18,6 +19,7 @@ interface GameSession {
   readonly pitViews: readonly PitView[];
   readonly layout: SplitScreenLayout;
   readonly match: Match | null;
+  readonly crazyMode: boolean;
   readonly cleanup: (() => void)[];
 }
 
@@ -43,10 +45,10 @@ const startMenu = (): void => {
   cleanupSession();
   audio.stopMusic();
   menu = new Menu();
-  menu.onStart(({ config }) => {
+  menu.onStart(({ config, crazyMode }) => {
     menu?.dispose();
     menu = null;
-    startGame(config);
+    startGame(config, crazyMode);
   });
 };
 
@@ -78,7 +80,7 @@ const wireEngineEvents = (engine: PlayerEngine): void => {
   });
 };
 
-const startGame = (config: MatchConfig): void => {
+const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   const players: readonly PlayerId[] = config.mode === "2p" ? PLAYERS : [1];
   const pitGap = 2;
   const pitSpacing = config.pit.width + pitGap;
@@ -193,8 +195,13 @@ const startGame = (config: MatchConfig): void => {
     pitViews,
     layout,
     match,
+    crazyMode,
     cleanup: cleanups,
   };
+
+  pitViews.forEach((v) => {
+    v.setCrazyMode(crazyMode);
+  });
 
   hud = new Hud(players, {
     onToggleSound: () => {
@@ -265,18 +272,27 @@ const showGameOver = (session: GameSession): void => {
   const states: Record<1 | 2, EngineState> = { 1: p1State, 2: p2State };
   const result: MatchResult | null = session.match ? session.match.state().result : null;
 
+  const winner = result?.winner ?? null;
+  if (session.config.mode === "1p") {
+    recordScore(p1State, "1p", null);
+  } else {
+    if (e1) recordScore(p1State, "2p", winner);
+    if (e2) recordScore(p2State, "2p", winner);
+  }
+
   gameOverScreen = new GameOverScreen(
     {
       mode: session.config.mode,
       result,
       states,
       config: session.config,
+      highScores: loadHighScores(),
     },
     (action) => {
       gameOverScreen?.dispose();
       gameOverScreen = null;
       if (action === "rematch") {
-        startGame(session.config);
+        startGame(session.config, session.crazyMode);
       } else {
         startMenu();
       }

@@ -19,6 +19,8 @@ export class PitView {
   private readonly walls: THREE.Group;
   private readonly sideCamera: THREE.PerspectiveCamera;
   private usingSideCamera = false;
+  private crazyMode = false;
+  private crazyTime = 0;
 
   constructor(config: PitConfig, originX: number) {
     this.config = config;
@@ -111,6 +113,14 @@ export class PitView {
     this.usingSideCamera = !this.usingSideCamera;
   }
 
+  setCrazyMode(enabled: boolean): void {
+    this.crazyMode = enabled;
+    if (!enabled) {
+      this.group.rotation.z = 0;
+      this.group.rotation.x = 0;
+    }
+  }
+
   get activeCamera(): THREE.PerspectiveCamera {
     return this.usingSideCamera ? this.sideCamera : this.camera;
   }
@@ -118,6 +128,13 @@ export class PitView {
   update(engine: PlayerEngine): void {
     const grid = engine.pit.snapshot();
     this.blockMesh.update(grid, this.colors);
+
+    if (this.crazyMode) {
+      const dt = 0.016;
+      this.crazyTime += dt;
+      this.group.rotation.z = Math.sin(this.crazyTime * 0.5) * 0.15;
+      this.group.rotation.x = Math.sin(this.crazyTime * 0.3) * 0.08;
+    }
 
     const state = engine.state();
     const active = state.active;
