@@ -29,6 +29,14 @@
           hooks = {
             nixfmt.enable = true;
             convco.enable = true;
+            eslint = {
+              enable = true;
+              package = nixpkgs.legacyPackages.${system}.eslint;
+            };
+            prettier = {
+              enable = true;
+              package = nixpkgs.legacyPackages.${system}.prettier;
+            };
           };
         };
       });

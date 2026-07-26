@@ -1,10 +1,10 @@
-import * as THREE from "three";
 import { createScene, createLights, onResize } from "./render/scene.js";
 import { PitView } from "./render/pitView.js";
 import { SplitScreenLayout } from "./render/layout.js";
 import { PlayerEngine } from "./game/engine.js";
 import { Rng } from "./game/rng.js";
 import type { MatchConfig } from "./game/types.js";
+import { InputSource, loadInputSettings } from "./input/input.js";
 
 const config: MatchConfig = {
   mode: "1p",
@@ -26,62 +26,32 @@ const pitView = new PitView(config.pit, 0);
 scene.add(pitView.group);
 
 const layout = new SplitScreenLayout([pitView]);
-
 const cleanupResize = onResize(renderer, container);
 
-const cameraOffset = new THREE.Object3D();
-cameraOffset.position.set(
-  (config.pit.width - 1) / 2,
-  config.pit.height / 2,
-  (config.pit.depth - 1) / 2,
-);
-scene.add(cameraOffset);
+const input = InputSource.create(loadInputSettings());
 
-const keys = new Set<string>();
-window.addEventListener("keydown", (e) => {
-  keys.add(e.code);
-  switch (e.code) {
-    case "ArrowLeft":
-      engine.applyAction({ kind: "move", dx: -1, dz: 0 });
+input.onAction((action) => {
+  switch (action.kind) {
+    case "move":
+      engine.applyAction({ kind: "move", dx: action.dx, dz: action.dz });
       break;
-    case "ArrowRight":
-      engine.applyAction({ kind: "move", dx: 1, dz: 0 });
+    case "rotate":
+      engine.applyAction({ kind: "rotate", axis: action.axis, dir: action.dir });
       break;
-    case "ArrowUp":
-      engine.applyAction({ kind: "move", dx: 0, dz: -1 });
+    case "softDrop":
+    case "hardDrop":
+    case "pause":
+      engine.applyAction({ kind: action.kind });
       break;
-    case "ArrowDown":
-      engine.applyAction({ kind: "move", dx: 0, dz: 1 });
-      break;
-    case "Space":
-      engine.applyAction({ kind: "hardDrop" });
-      break;
-    case "KeyQ":
-      engine.applyAction({ kind: "rotate", axis: "x", dir: 1 });
-      break;
-    case "KeyA":
-      engine.applyAction({ kind: "rotate", axis: "x", dir: -1 });
-      break;
-    case "KeyW":
-      engine.applyAction({ kind: "rotate", axis: "y", dir: 1 });
-      break;
-    case "KeyS":
-      engine.applyAction({ kind: "rotate", axis: "y", dir: -1 });
-      break;
-    case "KeyE":
-      engine.applyAction({ kind: "rotate", axis: "z", dir: 1 });
-      break;
-    case "KeyD":
-      engine.applyAction({ kind: "rotate", axis: "z", dir: -1 });
-      break;
-    case "KeyC":
-      pitView.toggleCamera();
-      break;
-    case "ShiftLeft":
-      engine.applyAction({ kind: "softDrop" });
+    default:
       break;
   }
-  void keys;
+});
+
+input.onGlobalAction((action) => {
+  if (action.kind === "cameraToggle") {
+    pitView.toggleCamera();
+  }
 });
 
 let last = performance.now();
@@ -104,4 +74,3 @@ const loop = (now: number): void => {
 requestAnimationFrame(loop);
 
 void cleanupResize;
-void cameraOffset;

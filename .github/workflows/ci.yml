@@ -29,10 +29,13 @@ jobs:
       - run: nix develop -c npm ci
       - run: nix develop -c npm run lint
       - run: nix develop -c npm run format:check
+      - run: nix develop -c nixfmt -c **/*.nix
+      - run: nix develop -c convco check
 
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs: build
     steps:
       - uses: actions/checkout@v5
       - uses: cachix/install-nix-action@v31
