@@ -4,9 +4,9 @@ import type { Vec3 } from "../game/types.js";
 
 const edgeGeometry = new THREE.EdgesGeometry(blockGeometry);
 const edgeMaterial = new THREE.LineBasicMaterial({
-  color: 0x222222,
+  color: 0xdddddd,
   transparent: true,
-  opacity: 0.6,
+  opacity: 0.5,
 });
 
 export class PieceView {

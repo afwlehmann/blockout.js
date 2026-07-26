@@ -56,9 +56,9 @@ export class BlockMesh {
     this.mesh.count = 0;
 
     const edgeMaterial = new THREE.LineBasicMaterial({
-      color: 0x222222,
+      color: 0xdddddd,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.5,
     });
     this.edgeMesh = new THREE.InstancedMesh(edgeGeom, edgeMaterial, this.capacity);
     this.edgeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);

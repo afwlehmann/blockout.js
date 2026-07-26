@@ -72,12 +72,12 @@ export class PitView {
     const cy = h / 2;
     const cz = (d - 1) / 2;
 
-    const mainDist = Math.max(w, d, h) * 1.4;
-    this.camera.position.set(cx + mainDist * 0.3, cy + mainDist * 0.9, cz + mainDist * 1.1);
-    this.camera.lookAt(cx, cy * 0.6, cz);
+    const mainDist = Math.max(w, d) * 1.6;
+    this.camera.position.set(cx, cy + mainDist + h * 0.4, cz + mainDist * 0.25);
+    this.camera.lookAt(cx, cy * 0.3, cz);
 
-    this.sideCamera.position.set(cx + mainDist * 1.3, cy + mainDist * 0.3, cz);
-    this.sideCamera.lookAt(cx, cy * 0.6, cz);
+    this.sideCamera.position.set(cx + mainDist * 1.2, cy + mainDist * 0.2, cz);
+    this.sideCamera.lookAt(cx, cy * 0.4, cz);
   }
 
   private buildWalls(): THREE.Group {
