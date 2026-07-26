@@ -44,7 +44,7 @@ export const PLAYER1_LAYOUT: KeyBinding = {
   hardDrop: ["Space"],
   softDrop: ["ShiftLeft"],
   pause: ["Escape"],
-  cameraToggle: ["KeyR"],
+  cameraToggle: ["KeyC"],
   toggleSound: ["KeyO"],
   toggleMusic: ["KeyB"],
   toggleGhost: ["KeyG"],

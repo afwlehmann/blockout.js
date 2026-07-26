@@ -2,12 +2,20 @@ import * as THREE from "three";
 import { blockGeometry } from "./blockMesh.js";
 import type { Vec3 } from "../game/types.js";
 
+const edgeGeometry = new THREE.EdgesGeometry(blockGeometry);
+const edgeMaterial = new THREE.LineBasicMaterial({
+  color: 0x222222,
+  transparent: true,
+  opacity: 0.6,
+});
+
 export class PieceView {
   readonly group: THREE.Group;
   private readonly ghostGroup: THREE.Group;
   private readonly material: THREE.MeshStandardMaterial;
   private readonly ghostMaterial: THREE.MeshBasicMaterial;
   private readonly meshes: THREE.Mesh[] = [];
+  private readonly edges: THREE.LineSegments[] = [];
 
   constructor(color: number) {
     this.group = new THREE.Group();
@@ -41,12 +49,14 @@ export class PieceView {
   }
 
   update(cells: readonly Vec3[], origin: Vec3, ghostOrigin: Vec3 | null): void {
-    this.syncMeshes(this.group, this.meshes, this.material, cells.length);
+    this.syncMeshes(cells.length);
     this.group.position.set(origin.x, origin.y, origin.z);
 
     cells.forEach((c, i) => {
       const mesh = this.meshes[i];
       if (mesh) mesh.position.set(c.x, c.y, c.z);
+      const edge = this.edges[i];
+      if (edge) edge.position.set(c.x, c.y, c.z);
     });
 
     while (this.ghostGroup.children.length < cells.length) {
@@ -73,27 +83,30 @@ export class PieceView {
     }
   }
 
-  private syncMeshes(
-    parent: THREE.Group,
-    pool: THREE.Mesh[],
-    material: THREE.Material,
-    needed: number,
-  ): void {
-    while (pool.length < needed) {
-      const mesh = new THREE.Mesh(blockGeometry, material);
+  private syncMeshes(needed: number): void {
+    while (this.meshes.length < needed) {
+      const mesh = new THREE.Mesh(blockGeometry, this.material);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      parent.add(mesh);
-      pool.push(mesh);
+      this.group.add(mesh);
+      this.meshes.push(mesh);
+
+      const edge = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+      this.group.add(edge);
+      this.edges.push(edge);
     }
-    while (pool.length > needed) {
-      const mesh = pool.pop();
-      if (mesh) parent.remove(mesh);
+    while (this.meshes.length > needed) {
+      const mesh = this.meshes.pop();
+      if (mesh) this.group.remove(mesh);
+      const edge = this.edges.pop();
+      if (edge) this.group.remove(edge);
     }
   }
 
   dispose(): void {
     this.material.dispose();
     this.ghostMaterial.dispose();
+    edgeMaterial.dispose();
+    edgeGeometry.dispose();
   }
 }

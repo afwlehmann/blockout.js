@@ -5,8 +5,8 @@ import { BlockMesh, blockGeometry } from "./blockMesh.js";
 import { PieceView } from "./pieceView.js";
 
 const PALETTE: readonly number[] = [
-  0x38bdf8, 0xfbbf24, 0x4ade80, 0xa78bfa, 0xf472b6, 0xfb7185, 0x34d399, 0x818cf8, 0x22d3ee,
-  0xfacc15, 0x60a5fa, 0xfb923c,
+  0x0000aa, 0x00aa00, 0x00aaaa, 0xaa0000, 0xaa00aa, 0xaa5500, 0xaaaaaa, 0x555555, 0x5555ff,
+  0x55ff55, 0x55ffff, 0xff5555, 0xff55ff, 0xffff55, 0xffffff,
 ];
 
 interface Particle {
@@ -60,6 +60,7 @@ export class PitView {
     this.blockMesh.mesh.castShadow = true;
     this.blockMesh.mesh.receiveShadow = true;
     this.group.add(this.blockMesh.mesh);
+    this.group.add(this.blockMesh.edgeObject);
 
     this.walls = this.buildWalls();
     this.group.add(this.walls);
@@ -165,7 +166,7 @@ export class PitView {
           const idx = x + w * (z + d * y);
           const colorIdx = grid[idx] ?? 0;
           if (colorIdx === 0) continue;
-          const colorHex = PALETTE[colorIdx - 1] ?? PALETTE[0] ?? 0xffffff;
+          const colorHex = colorIdx;
           const color = new THREE.Color(colorHex);
 
           for (let p = 0; p < PARTICLE_COUNT; p++) {

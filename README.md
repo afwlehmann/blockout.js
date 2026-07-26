@@ -42,7 +42,7 @@ and production build.
 | Hard drop       | Space             |
 | Soft drop       | Left Shift        |
 | Pause           | Esc               |
-| Camera toggle   | R                 |
+| Camera toggle   | C                 |
 | Toggle SFX      | O                 |
 | Toggle Music    | B                 |
 | Toggle Ghost    | G                 |

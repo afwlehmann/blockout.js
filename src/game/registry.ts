@@ -4,13 +4,13 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "I",
     set: "flat",
-    color: 0x38bdf8,
+    color: 0x00aa00,
     cells: [{ x: 0, y: 0, z: 0 }],
   },
   {
     id: "O",
     set: "flat",
-    color: 0xfbbf24,
+    color: 0xffff55,
     cells: [
       { x: 0, y: 0, z: 0 },
       { x: 1, y: 0, z: 0 },
@@ -19,7 +19,7 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "L",
     set: "flat",
-    color: 0x4ade80,
+    color: 0xaa5500,
     cells: [
       { x: 0, y: 0, z: 0 },
       { x: 1, y: 0, z: 0 },
@@ -29,7 +29,7 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "T",
     set: "flat",
-    color: 0xa78bfa,
+    color: 0xaa00aa,
     cells: [
       { x: 0, y: 0, z: 0 },
       { x: 1, y: 0, z: 0 },
@@ -39,7 +39,7 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "S",
     set: "flat",
-    color: 0xf472b6,
+    color: 0xff5555,
     cells: [
       { x: 0, y: 0, z: 0 },
       { x: 1, y: 0, z: 0 },
@@ -49,7 +49,7 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "Square",
     set: "flat",
-    color: 0xfb7185,
+    color: 0x00aaaa,
     cells: [
       { x: 0, y: 0, z: 0 },
       { x: 1, y: 0, z: 0 },
@@ -60,7 +60,7 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "L3",
     set: "basic",
-    color: 0x34d399,
+    color: 0x55ff55,
     cells: [
       { x: 0, y: 0, z: 0 },
       { x: 1, y: 0, z: 0 },
@@ -70,7 +70,7 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "T3",
     set: "basic",
-    color: 0x818cf8,
+    color: 0x5555ff,
     cells: [
       { x: 0, y: 0, z: 0 },
       { x: 1, y: 0, z: 0 },
@@ -81,7 +81,7 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "Screw",
     set: "extended",
-    color: 0x22d3ee,
+    color: 0x55ffff,
     cells: [
       { x: 0, y: 0, z: 0 },
       { x: 1, y: 0, z: 0 },
@@ -92,7 +92,7 @@ export const PIECE_DEFS: readonly PieceDef[] = [
   {
     id: "Tripod",
     set: "extended",
-    color: 0xfacc15,
+    color: 0xff55ff,
     cells: [
       { x: 1, y: 0, z: 0 },
       { x: 0, y: 0, z: 1 },
