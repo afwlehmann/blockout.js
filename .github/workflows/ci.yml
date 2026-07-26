@@ -8,18 +8,20 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - run: nix develop -c npm ci
       - run: nix develop -c npm run build
 
-  lint:
-    name: Lint
+  lint-eslint:
+    name: lint / eslint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -28,12 +30,42 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
       - run: nix develop -c npm ci
       - run: nix develop -c npm run lint
+
+  lint-prettier:
+    name: lint / prettier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - run: nix develop -c npm ci
       - run: nix develop -c npm run format:check
+
+  lint-nixfmt:
+    name: lint / nixfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - run: nix develop -c nixfmt -c **/*.nix
+
+  lint-convco:
+    name: lint / convco
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - run: nix develop -c convco check
 
   test:
-    name: Test
+    name: test
     runs-on: ubuntu-latest
     needs: build
     steps:
