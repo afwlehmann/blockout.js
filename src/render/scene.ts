@@ -38,7 +38,7 @@ export const createLights = (scene: THREE.Scene): Lights => {
   scene.add(ambient);
 
   const key = new THREE.DirectionalLight(0xffffff, 1.1);
-  key.position.set(8, 18, 10);
+  key.position.set(0, 30, 0.01);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.camera.near = 1;
@@ -53,7 +53,7 @@ export const createLights = (scene: THREE.Scene): Lights => {
   scene.add(key.target);
 
   const fill = new THREE.DirectionalLight(0x6080a0, 0.35);
-  fill.position.set(-10, 8, -6);
+  fill.position.set(-5, 10, -3);
   scene.add(fill);
 
   return { ambient, key, fill };

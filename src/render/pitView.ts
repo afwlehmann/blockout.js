@@ -72,12 +72,13 @@ export class PitView {
     const cy = h / 2;
     const cz = (d - 1) / 2;
 
-    const mainDist = Math.max(w, d) * 1.6;
-    this.camera.position.set(cx, cy + mainDist + h * 0.4, cz + mainDist * 0.25);
-    this.camera.lookAt(cx, cy * 0.3, cz);
+    const mainDist = Math.max(w, d) * 2.4;
+    this.camera.position.set(cx, cy + mainDist, cz);
+    this.camera.lookAt(cx, cy, cz);
 
-    this.sideCamera.position.set(cx + mainDist * 1.2, cy + mainDist * 0.2, cz);
-    this.sideCamera.lookAt(cx, cy * 0.4, cz);
+    const sideDist = Math.max(w, d, h) * 1.8;
+    this.sideCamera.position.set(cx + sideDist, cy, cz);
+    this.sideCamera.lookAt(cx, cy, cz);
   }
 
   private buildWalls(): THREE.Group {
@@ -96,6 +97,11 @@ export class PitView {
     });
     const edgeMat = new THREE.LineBasicMaterial({
       color: 0xc0c0c0,
+    });
+    const gridMat = new THREE.LineBasicMaterial({
+      color: 0x808080,
+      transparent: true,
+      opacity: 0.5,
     });
 
     const group = new THREE.Group();
@@ -122,12 +128,54 @@ export class PitView {
       group.add(wall);
     });
 
+    this.addWallGrid(group, gridMat, w, d, h);
+
     const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d));
     const line = new THREE.LineSegments(edges, edgeMat);
     line.position.set(cx, h / 2 - 0.5, cz);
     group.add(line);
 
     return group;
+  }
+
+  private addWallGrid(
+    group: THREE.Group,
+    mat: THREE.LineBasicMaterial,
+    w: number,
+    d: number,
+    h: number,
+  ): void {
+    const pts: THREE.Vector3[] = [];
+    const z0 = -0.5;
+    const z1 = d - 0.5;
+    const x0 = -0.5;
+    const x1 = w - 0.5;
+    const y0 = -0.5;
+    const y1 = h - 0.5;
+
+    for (let gx = 0; gx <= w; gx++) {
+      const x = x0 + gx;
+      pts.push(new THREE.Vector3(x, y0, z0), new THREE.Vector3(x, y1, z0));
+      pts.push(new THREE.Vector3(x, y0, z1), new THREE.Vector3(x, y1, z1));
+      pts.push(new THREE.Vector3(x, y0, z0), new THREE.Vector3(x, y0, z1));
+    }
+    for (let gy = 0; gy <= h; gy++) {
+      const y = y0 + gy;
+      pts.push(new THREE.Vector3(x0, y, z0), new THREE.Vector3(x1, y, z0));
+      pts.push(new THREE.Vector3(x0, y, z1), new THREE.Vector3(x1, y, z1));
+      pts.push(new THREE.Vector3(x0, y, z0), new THREE.Vector3(x0, y, z1));
+      pts.push(new THREE.Vector3(x1, y, z0), new THREE.Vector3(x1, y, z1));
+    }
+    for (let gz = 0; gz <= d; gz++) {
+      const z = z0 + gz;
+      pts.push(new THREE.Vector3(x0, y0, z), new THREE.Vector3(x0, y1, z));
+      pts.push(new THREE.Vector3(x1, y0, z), new THREE.Vector3(x1, y1, z));
+      pts.push(new THREE.Vector3(x0, y0, z), new THREE.Vector3(x1, y0, z));
+    }
+
+    const geom = new THREE.BufferGeometry().setFromPoints(pts);
+    const grid = new THREE.LineSegments(geom, mat);
+    group.add(grid);
   }
 
   toggleCamera(): void {
