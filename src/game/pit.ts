@@ -31,7 +31,7 @@ export class Pit {
     this.width = config.width;
     this.depth = config.depth;
     this.height = config.height;
-    this.grid = new Array(this.width * this.depth * this.height).fill(0) as Cell[];
+    this.grid = Array.from({ length: this.width * this.depth * this.height }, () => 0);
   }
 
   private inBounds(x: number, y: number, z: number): boolean {
@@ -100,7 +100,7 @@ export class Pit {
       if (!clearedLayers.includes(y)) kept.push(c);
     });
     const clearedCount = clearedLayers.length;
-    const emptyTop = new Array(this.width * this.depth * clearedCount).fill(0) as Cell[];
+    const emptyTop = Array.from({ length: this.width * this.depth * clearedCount }, () => 0);
     this.grid = [...kept, ...emptyTop];
   }
 
@@ -110,7 +110,7 @@ export class Pit {
     const overflowCheck = this.grid.slice((this.height - shiftedBy) * rowsPerLayer);
     const overflowed = overflowCheck.some((c) => c !== 0);
     const kept = this.grid.slice(0, (this.height - shiftedBy) * rowsPerLayer);
-    const emptyBottom = new Array(rowsPerLayer * shiftedBy).fill(0) as Cell[];
+    const emptyBottom = Array.from({ length: rowsPerLayer * shiftedBy }, () => 0);
     this.grid = [...emptyBottom, ...kept];
     return { overflowed, shiftedBy };
   }

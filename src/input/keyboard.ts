@@ -9,6 +9,8 @@ export type GameAction =
   | { readonly kind: "toggleGhost" }
   | { readonly kind: "exitToMenu" };
 
+const ALL_PLAYERS: readonly PlayerId[] = [1, 2];
+
 export type ActionHandler = (action: GameAction) => void;
 
 export interface KeyBinding {
@@ -185,7 +187,7 @@ export class KeyboardInput {
     const matchedPlayers: { player: PlayerId; action: GameAction }[] = [];
     const globalActions: GameAction[] = [];
 
-    ([1, 2] as const).forEach((player) => {
+    ALL_PLAYERS.forEach((player) => {
       const binding = this.bindings[player];
       const action = lookup(binding, code);
       if (!action) return;
@@ -275,17 +277,70 @@ export const defaultSettings = (): InputSettings => ({
   },
 });
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+
+const isStringArray = (v: unknown): v is readonly string[] =>
+  Array.isArray(v) && v.every((x) => typeof x === "string");
+
+const BINDING_KEYS: readonly (keyof KeyBinding)[] = [
+  "moveLeft",
+  "moveRight",
+  "moveForward",
+  "moveBack",
+  "rotateXPos",
+  "rotateXNeg",
+  "rotateYPos",
+  "rotateYNeg",
+  "rotateZPos",
+  "rotateZNeg",
+  "hardDrop",
+  "softDrop",
+  "pause",
+  "exitToMenu",
+  "cameraToggle",
+  "toggleSound",
+  "toggleMusic",
+  "toggleGhost",
+];
+
+type WritableKeyBinding = {
+  -readonly [K in keyof KeyBinding]: readonly string[];
+};
+
+const parseStoredBindings = (
+  raw: string,
+): Partial<Record<PlayerId, Partial<WritableKeyBinding>>> => {
+  const parsed: unknown = JSON.parse(raw);
+  if (!isRecord(parsed) || !isRecord(parsed.bindings)) return {};
+  const b = parsed.bindings;
+  const result: Partial<Record<PlayerId, Partial<WritableKeyBinding>>> = {};
+  ALL_PLAYERS.forEach((p) => {
+    const key = String(p);
+    if (isRecord(b[key])) {
+      const playerBinding = b[key];
+      const partial: Partial<WritableKeyBinding> = {};
+      BINDING_KEYS.forEach((k) => {
+        const v = playerBinding[k];
+        if (isStringArray(v)) {
+          partial[k] = v;
+        }
+      });
+      result[p] = partial;
+    }
+  });
+  return result;
+};
+
 export const loadSettings = (): InputSettings => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultSettings();
-    const parsed = JSON.parse(raw) as Partial<InputSettings>;
+    const stored = parseStoredBindings(raw);
     const defaults = defaultSettings();
-    if (!parsed.bindings) return defaults;
     return {
       bindings: {
-        1: { ...defaults.bindings[1], ...parsed.bindings[1] },
-        2: { ...defaults.bindings[2], ...parsed.bindings[2] },
+        1: { ...defaults.bindings[1], ...stored[1] },
+        2: { ...defaults.bindings[2], ...stored[2] },
       },
     };
   } catch {
@@ -297,6 +352,6 @@ export const saveSettings = (settings: InputSettings): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   } catch {
-    // ignore storage failures
+    void 0;
   }
 };

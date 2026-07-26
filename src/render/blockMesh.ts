@@ -99,20 +99,19 @@ export class BlockMesh {
   }
 
   update(grid: readonly number[], _colorPalette: readonly THREE.Color[]): void {
-    let count = 0;
     const colorAttr = this.mesh.instanceColor;
     if (!colorAttr) return;
 
-    grid.forEach((value, i) => {
-      if (value === 0 || count >= this.capacity) return;
+    const count = grid.reduce((acc, value, i) => {
+      if (value === 0 || acc >= this.capacity) return acc;
       const x = i % this.width;
       const remainder = Math.floor(i / this.width);
       const z = remainder % this.depth;
       const y = Math.floor(remainder / this.depth);
 
-      this.setInstance(count, x, y, z, value, colorAttr);
-      count += 1;
-    });
+      this.setInstance(acc, x, y, z, value, colorAttr);
+      return acc + 1;
+    }, 0);
 
     this.finalize(count, colorAttr);
   }
@@ -124,24 +123,23 @@ export class BlockMesh {
     clearedLayers: readonly number[],
     slideProgress: number,
   ): void {
-    let count = 0;
     const colorAttr = this.mesh.instanceColor;
     if (!colorAttr) return;
 
     const minCleared = Math.min(...clearedLayers);
     const slideOffset = clearedLayers.length * (1 - slideProgress);
 
-    postGrid.forEach((value, i) => {
-      if (value === 0 || count >= this.capacity) return;
+    const count = postGrid.reduce((acc, value, i) => {
+      if (value === 0 || acc >= this.capacity) return acc;
       const x = i % this.width;
       const remainder = Math.floor(i / this.width);
       const z = remainder % this.depth;
       const y = Math.floor(remainder / this.depth);
 
       const renderY = y >= minCleared ? y + slideOffset : y;
-      this.setInstance(count, x, renderY, z, value, colorAttr);
-      count += 1;
-    });
+      this.setInstance(acc, x, renderY, z, value, colorAttr);
+      return acc + 1;
+    }, 0);
 
     this.finalize(count, colorAttr);
   }

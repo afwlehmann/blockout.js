@@ -7,6 +7,9 @@ const make = () => new Pit(config);
 
 const v = (x: number, y: number, z: number): Vec3 => ({ x, y, z });
 
+const fillLayer = (y: number, size = 3): Vec3[] =>
+  Array.from({ length: size * size }, (_, i) => v(i % size, y, Math.floor(i / size)));
+
 describe("Pit dimensions and grid", () => {
   it("initializes an empty grid of w*d*h cells", () => {
     const pit = make();
@@ -73,12 +76,7 @@ describe("Pit.lock", () => {
   it("detects and clears a full layer, compacting above downward", () => {
     const pit = make();
     const color = 4;
-    const floorCells: Vec3[] = [];
-    for (let x = 0; x < 3; x++) {
-      for (let z = 0; z < 3; z++) {
-        floorCells.push(v(x, 0, z));
-      }
-    }
+    const floorCells = fillLayer(0);
     const result = pit.lock(v(0, 0, 0), floorCells, color);
     expect(result.clearedLayers).toEqual([0]);
     expect(result.blockOut).toBe(true);
@@ -88,15 +86,6 @@ describe("Pit.lock", () => {
   it("clears multiple full layers in a single lock", () => {
     const pit = make();
     const color = 4;
-    const fillLayer = (y: number): Vec3[] => {
-      const cells: Vec3[] = [];
-      for (let x = 0; x < 3; x++) {
-        for (let z = 0; z < 3; z++) {
-          cells.push(v(x, y, z));
-        }
-      }
-      return cells;
-    };
     const cells = [...fillLayer(0), ...fillLayer(1)];
     const result = pit.lock(v(0, 0, 0), cells, color);
     expect(result.clearedLayers).toEqual([0, 1]);
@@ -106,12 +95,7 @@ describe("Pit.lock", () => {
   it("compacts higher layers down after a clear", () => {
     const pit = make();
     pit.lock(v(0, 2, 0), [v(0, 0, 0)], 9);
-    const cells: Vec3[] = [];
-    for (let x = 0; x < 3; x++) {
-      for (let z = 0; z < 3; z++) {
-        cells.push(v(x, 0, z));
-      }
-    }
+    const cells = fillLayer(0);
     pit.lock(v(0, 0, 0), cells, 1);
     const idx = 0 + 3 * (0 + 3 * 1);
     expect(pit.snapshot()[idx]).toBe(9);

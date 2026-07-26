@@ -51,12 +51,14 @@ export interface EngineState {
 
 const GRAVITY_BASE_MS = 800;
 const GRAVITY_MIN_MS = 50;
+const GRAVITY_STEP_MS = 50;
 const LEVEL_FACES_PER_LEVEL = 10;
 const ALL_CLEAR_BONUS = 10000;
+const SCORE_PER_LAYER: readonly number[] = [0, 100, 300, 600, 1000, 1500];
+const MAX_SCORE_TIER = 5;
 
 const scoreFor = (layers: number, level: number): number => {
-  const perLayer = [0, 100, 300, 600, 1000, 1500];
-  const base = perLayer[Math.min(layers, 5)] ?? 1500;
+  const base = SCORE_PER_LAYER[Math.min(layers, MAX_SCORE_TIER)] ?? 1500;
   return base * level;
 };
 
@@ -177,7 +179,7 @@ export class PlayerEngine {
   }
 
   private gravityMs(): number {
-    return Math.max(GRAVITY_MIN_MS, GRAVITY_BASE_MS - (this.level - 1) * 50);
+    return Math.max(GRAVITY_MIN_MS, GRAVITY_BASE_MS - (this.level - 1) * GRAVITY_STEP_MS);
   }
 
   update(deltaMs: number): readonly EngineEvent[] {

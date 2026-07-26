@@ -66,24 +66,47 @@ const input = InputSource.create(loadInputSettings());
 const audio = new AudioManager();
 
 const PLAYERS: readonly PlayerId[] = [1, 2];
-let currentSession: GameSession | null = null;
-let menu: Menu | null = null;
-let hud: Hud | null = null;
-let gameOverScreen: GameOverScreen | null = null;
-let pauseOverlay: PauseOverlay | null = null;
-let rafId: number | null = null;
-let lastFrame = 0;
+
+const MS_PER_SEC = 1000;
+const AMBIENT_ROTATION_SPEED = 0.01;
+const MAX_DROP_DISTANCE = 20;
+const SHAKE_FACTOR = 0.06;
+const CLEAR_SFX: readonly SfxType[] = ["clear1", "clear2", "clear3", "clear4"];
+const DEFAULT_CLEAR_SFX: SfxType = "clear4";
+
+interface AppState {
+  session: GameSession | null;
+  menu: Menu | null;
+  hud: Hud | null;
+  gameOverScreen: GameOverScreen | null;
+  pauseOverlay: PauseOverlay | null;
+  exitConfirmOverlay: PauseOverlay | null;
+  rafId: number | null;
+  lastFrame: number;
+  ambientActive: boolean;
+  ambientLast: number;
+}
+
+const state: AppState = {
+  session: null,
+  menu: null,
+  hud: null,
+  gameOverScreen: null,
+  pauseOverlay: null,
+  exitConfirmOverlay: null,
+  rafId: null,
+  lastFrame: 0,
+  ambientActive: false,
+  ambientLast: 0,
+};
 
 const ambientCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 300);
 ambientCamera.position.set(0, 0, 0);
 ambientCamera.lookAt(0, 0, -1);
 
-let ambientActive = false;
-let ambientLast = 0;
-
 const ambientLoop = (now: number): void => {
-  const dt = now - ambientLast;
-  ambientLast = now;
+  const dt = now - state.ambientLast;
+  state.ambientLast = now;
   spaceEnv.update(dt);
   const w = container.clientWidth;
   const h = container.clientHeight;
@@ -91,33 +114,33 @@ const ambientLoop = (now: number): void => {
     ambientCamera.aspect = w / h;
     ambientCamera.updateProjectionMatrix();
   }
-  ambientCamera.rotation.y += (dt / 1000) * 0.01;
+  ambientCamera.rotation.y += (dt / MS_PER_SEC) * AMBIENT_ROTATION_SPEED;
   renderer.setViewport(0, 0, w, h);
   renderer.setScissorTest(false);
   renderer.render(scene, ambientCamera);
-  if (ambientActive) requestAnimationFrame(ambientLoop);
+  if (state.ambientActive) requestAnimationFrame(ambientLoop);
 };
 
 const startAmbient = (): void => {
-  if (ambientActive) return;
-  ambientActive = true;
-  ambientLast = performance.now();
+  if (state.ambientActive) return;
+  state.ambientActive = true;
+  state.ambientLast = performance.now();
   requestAnimationFrame(ambientLoop);
 };
 
 const stopAmbient = (): void => {
-  ambientActive = false;
+  state.ambientActive = false;
 };
 
 const startMenu = (): void => {
-  if (menu) return;
+  if (state.menu) return;
   cleanupSession();
   audio.stopMusic();
   startAmbient();
-  menu = new Menu();
-  menu.onStart(({ config, crazyMode }) => {
-    menu?.dispose();
-    menu = null;
+  state.menu = new Menu();
+  state.menu.onStart(({ config, crazyMode }) => {
+    state.menu?.dispose();
+    state.menu = null;
     startGame(config, crazyMode);
   });
 };
@@ -132,8 +155,7 @@ const sfxForEngineEvent = (ev: EngineEvent): { type: SfxType; intensity: number 
       return { type: "lock", intensity: 0 };
     case "clear": {
       const layers = ev.clearedLayers?.length ?? 0;
-      const types: Record<number, SfxType> = { 1: "clear1", 2: "clear2", 3: "clear3", 4: "clear4" };
-      const type = types[layers] ?? "clear4";
+      const type = CLEAR_SFX[layers - 1] ?? DEFAULT_CLEAR_SFX;
       return { type, intensity: layers };
     }
     case "levelUp":
@@ -152,8 +174,8 @@ const wireEngineEvents = (engine: PlayerEngine, pitView: PitView): void => {
     const sfx = sfxForEngineEvent(ev);
     if (sfx) audio.playSfx(sfx.type, sfx.intensity);
     if (ev.type === "lock" && ev.dropDistance && ev.dropDistance > 0) {
-      const intensity = Math.min(ev.dropDistance, 20);
-      pitView.triggerShake(intensity * 0.02);
+      const intensity = Math.min(ev.dropDistance, MAX_DROP_DISTANCE);
+      pitView.triggerShake(intensity * SHAKE_FACTOR);
       audio.playSfx("rumble", intensity);
     }
     if (ev.type === "clear" && ev.clearedLayers && ev.preClearGrid) {
@@ -177,7 +199,6 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   const engines: Partial<Record<PlayerId, PlayerEngine>> = {};
   const pitViews: PitView[] = [];
   const cleanups: (() => void)[] = [];
-  let match: Match | null = null;
 
   const createPlayerScene = (): THREE.Scene => {
     const s = new THREE.Scene();
@@ -188,12 +209,11 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   };
 
   if (is2P) {
-    match = new Match(config, Math.floor(Math.random() * 1000000));
-    const m = match;
+    const match = new Match(config, Math.floor(Math.random() * 1000000));
     players.forEach((p) => {
-      engines[p] = m.engines[p];
+      engines[p] = match.engines[p];
     });
-    m.on((ev) => {
+    match.on((ev) => {
       if (ev.type === "attack") {
         audio.playSfx("attack", ev.layers);
       }
@@ -223,24 +243,32 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
 
     players.forEach((p) => {
       input.onAction(p, (action) => {
-        const mm = match;
-        if (!mm) return;
         switch (action.kind) {
           case "move":
-            mm.applyAction(p, { kind: "move", dx: action.dx, dz: action.dz });
+            match.applyAction(p, { kind: "move", dx: action.dx, dz: action.dz });
             break;
           case "rotate":
-            mm.applyAction(p, { kind: "rotate", axis: action.axis, dir: action.dir });
+            match.applyAction(p, { kind: "rotate", axis: action.axis, dir: action.dir });
             break;
           case "hardDrop":
           case "softDrop":
-            mm.applyAction(p, { kind: action.kind });
+            match.applyAction(p, { kind: action.kind });
             break;
           default:
             break;
         }
       });
     });
+    state.session = {
+      config,
+      players,
+      engines,
+      pitViews,
+      layout: new SplitScreenLayout(pitViews),
+      match,
+      crazyMode: effectiveCrazy,
+      cleanup: cleanups,
+    };
   } else {
     const engine = new PlayerEngine(config, new Rng(Math.floor(Math.random() * 1000000)));
     engines[1] = engine;
@@ -267,20 +295,30 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
           break;
       }
     });
+    state.session = {
+      config,
+      players,
+      engines,
+      pitViews,
+      layout: new SplitScreenLayout(pitViews),
+      match: null,
+      crazyMode: effectiveCrazy,
+      cleanup: cleanups,
+    };
   }
 
   input.onGlobalAction((action) => {
-    if (action.kind === "cameraToggle" && !is2P) {
+    if (action.kind === "cameraToggle" && !is2P && state.session) {
       pitViews.forEach((v) => {
         v.toggleCamera();
       });
-      layout.invalidateCache();
+      state.session.layout.invalidateCache();
     } else if (action.kind === "toggleSound") {
       const enabled = audio.toggleSfx();
-      hud?.setSoundEnabled(enabled);
+      state.hud?.setSoundEnabled(enabled);
     } else if (action.kind === "toggleMusic") {
       const enabled = audio.toggleMusic();
-      hud?.setMusicEnabled(enabled);
+      state.hud?.setMusicEnabled(enabled);
     } else if (action.kind === "pause") {
       togglePause();
     } else if (action.kind === "exitToMenu") {
@@ -288,48 +326,35 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
     }
   });
 
-  const layout = new SplitScreenLayout(pitViews);
-
-  currentSession = {
-    config,
-    players,
-    engines,
-    pitViews,
-    layout,
-    match,
-    crazyMode: effectiveCrazy,
-    cleanup: cleanups,
-  };
-
   pitViews.forEach((v) => {
     v.setCrazyMode(effectiveCrazy);
   });
 
-  hud = new Hud(players, {
+  state.hud = new Hud(players, {
     onToggleSound: () => {
       const enabled = audio.toggleSfx();
-      hud?.setSoundEnabled(enabled);
+      state.hud?.setSoundEnabled(enabled);
     },
     onToggleMusic: () => {
       const enabled = audio.toggleMusic();
-      hud?.setMusicEnabled(enabled);
+      state.hud?.setMusicEnabled(enabled);
     },
     onPause: () => {
       togglePause();
     },
   });
-  hud.setSoundEnabled(!audio.isSfxMuted());
-  hud.setMusicEnabled(!audio.isMusicMuted());
+  state.hud.setSoundEnabled(!audio.isSfxMuted());
+  state.hud.setMusicEnabled(!audio.isMusicMuted());
 
   void audio.resume();
   audio.startMusic();
 
-  lastFrame = performance.now();
-  rafId = requestAnimationFrame(loop);
+  state.lastFrame = performance.now();
+  state.rafId = requestAnimationFrame(loop);
 };
 
 const togglePause = (): void => {
-  const session = currentSession;
+  const session = state.session;
   if (!session) return;
   const anyPaused = session.players.some((p) => {
     const e = session.engines[p];
@@ -342,22 +367,20 @@ const togglePause = (): void => {
   });
   if (newPaused) {
     audio.pauseMusic();
-    pauseOverlay = createPauseOverlay();
+    state.pauseOverlay = createPauseOverlay();
   } else {
-    if (pauseOverlay) {
-      pauseOverlay.dispose();
-      pauseOverlay = null;
+    if (state.pauseOverlay) {
+      state.pauseOverlay.dispose();
+      state.pauseOverlay = null;
     }
     audio.resumeMusic();
   }
 };
 
-let exitConfirmOverlay: PauseOverlay | null = null;
-
 const confirmExitToMenu = (): void => {
-  const session = currentSession;
+  const session = state.session;
   if (!session) return;
-  if (exitConfirmOverlay) return;
+  if (state.exitConfirmOverlay) return;
   session.players.forEach((p) => {
     const e = session.engines[p];
     if (e && !e.state().paused) e.setPaused(true);
@@ -382,9 +405,9 @@ const confirmExitToMenu = (): void => {
   cancelBtn.textContent = "Cancel";
 
   const cancelExit = (): void => {
-    if (exitConfirmOverlay) {
-      exitConfirmOverlay.dispose();
-      exitConfirmOverlay = null;
+    if (state.exitConfirmOverlay) {
+      state.exitConfirmOverlay.dispose();
+      state.exitConfirmOverlay = null;
     }
     session.players.forEach((p) => {
       const e = session.engines[p];
@@ -394,9 +417,9 @@ const confirmExitToMenu = (): void => {
   };
 
   const confirmExit = (): void => {
-    if (exitConfirmOverlay) {
-      exitConfirmOverlay.dispose();
-      exitConfirmOverlay = null;
+    if (state.exitConfirmOverlay) {
+      state.exitConfirmOverlay.dispose();
+      state.exitConfirmOverlay = null;
     }
     cleanupSession();
     startMenu();
@@ -425,7 +448,7 @@ const confirmExitToMenu = (): void => {
   panel.appendChild(btnRow);
   el.appendChild(panel);
   const cleanup = mount(el);
-  exitConfirmOverlay = {
+  state.exitConfirmOverlay = {
     el,
     cleanup,
     dispose(): void {
@@ -436,10 +459,10 @@ const confirmExitToMenu = (): void => {
 };
 
 const loop = (now: number): void => {
-  const session = currentSession;
+  const session = state.session;
   if (!session) return;
-  const dt = now - lastFrame;
-  lastFrame = now;
+  const dt = now - state.lastFrame;
+  state.lastFrame = now;
 
   session.players.forEach((p) => {
     const engine = session.engines[p];
@@ -458,7 +481,7 @@ const loop = (now: number): void => {
 
   session.players.forEach((p) => {
     const engine = session.engines[p];
-    if (engine) hud?.updatePlayer(p, engine.state());
+    if (engine) state.hud?.updatePlayer(p, engine.state());
   });
 
   const anyGameOver = session.players.some((p) => {
@@ -467,7 +490,7 @@ const loop = (now: number): void => {
   });
 
   if (!anyGameOver) {
-    rafId = requestAnimationFrame(loop);
+    state.rafId = requestAnimationFrame(loop);
   } else {
     showGameOver(session);
     startAmbient();
@@ -475,9 +498,9 @@ const loop = (now: number): void => {
 };
 
 const showGameOver = (session: GameSession): void => {
-  if (pauseOverlay) {
-    pauseOverlay.dispose();
-    pauseOverlay = null;
+  if (state.pauseOverlay) {
+    state.pauseOverlay.dispose();
+    state.pauseOverlay = null;
   }
   const e1 = session.engines[1];
   const e2 = session.engines[2];
@@ -490,7 +513,7 @@ const showGameOver = (session: GameSession): void => {
 
   const existingScores = loadHighScores();
 
-  gameOverScreen = new GameOverScreen(
+  state.gameOverScreen = new GameOverScreen(
     {
       mode: session.config.mode,
       result,
@@ -499,8 +522,8 @@ const showGameOver = (session: GameSession): void => {
       highScores: existingScores,
     },
     (action) => {
-      gameOverScreen?.dispose();
-      gameOverScreen = null;
+      state.gameOverScreen?.dispose();
+      state.gameOverScreen = null;
       if (action === "rematch") {
         startGame(session.config, session.crazyMode);
       } else {
@@ -508,8 +531,8 @@ const showGameOver = (session: GameSession): void => {
       }
     },
     (player, name) => {
-      const state = states[player];
-      const entry = createScoreEntry(state, session.config.mode, winner, name);
+      const playerState = states[player];
+      const entry = createScoreEntry(playerState, session.config.mode, winner, name);
       saveHighScore(entry);
     },
   );
@@ -528,33 +551,33 @@ const fallbackState = (): EngineState => ({
 });
 
 const cleanupSession = (): void => {
-  if (rafId !== null) {
-    cancelAnimationFrame(rafId);
-    rafId = null;
+  if (state.rafId !== null) {
+    cancelAnimationFrame(state.rafId);
+    state.rafId = null;
   }
   container.classList.remove("bo-fade-in");
-  if (currentSession) {
-    currentSession.layout.dispose();
-    currentSession.cleanup.forEach((fn) => {
+  if (state.session) {
+    state.session.layout.dispose();
+    state.session.cleanup.forEach((fn) => {
       fn();
     });
-    currentSession = null;
+    state.session = null;
   }
-  if (hud) {
-    hud.dispose();
-    hud = null;
+  if (state.hud) {
+    state.hud.dispose();
+    state.hud = null;
   }
-  if (gameOverScreen) {
-    gameOverScreen.dispose();
-    gameOverScreen = null;
+  if (state.gameOverScreen) {
+    state.gameOverScreen.dispose();
+    state.gameOverScreen = null;
   }
-  if (pauseOverlay) {
-    pauseOverlay.dispose();
-    pauseOverlay = null;
+  if (state.pauseOverlay) {
+    state.pauseOverlay.dispose();
+    state.pauseOverlay = null;
   }
-  if (exitConfirmOverlay) {
-    exitConfirmOverlay.dispose();
-    exitConfirmOverlay = null;
+  if (state.exitConfirmOverlay) {
+    state.exitConfirmOverlay.dispose();
+    state.exitConfirmOverlay = null;
   }
 };
 

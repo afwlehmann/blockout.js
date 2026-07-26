@@ -22,12 +22,7 @@ export class AudioManager {
 
   private ensureContext(): void {
     if (this.ctx) return;
-    const w = window as unknown as {
-      AudioContext: typeof AudioContext;
-      webkitAudioContext?: typeof AudioContext;
-    };
-    const Ctor = w.AudioContext;
-    this.ctx = new Ctor();
+    this.ctx = new AudioContext();
     this.synth = new SidSynth(this.ctx);
     this.scheduler = new Scheduler(this.synth, TRACK);
     this.sfx = new Sfx(this.synth);

@@ -11,9 +11,12 @@ export interface MenuSelection {
 
 export type StartHandler = (selection: MenuSelection) => void;
 
+type Mode = "1p" | "2p";
+type Preset = "flat-fun" | "3d-mania" | "out-of-control" | "custom";
+
 interface MenuState {
-  mode: "1p" | "2p";
-  preset: "flat-fun" | "3d-mania" | "out-of-control" | "custom";
+  mode: Mode;
+  preset: Preset;
   set: PieceSet;
   difficulty: Difficulty;
   width: number;
@@ -23,6 +26,12 @@ interface MenuState {
   targetFaces: number;
   crazyMode: boolean;
 }
+
+const MODE_OPTIONS: readonly Mode[] = ["1p", "2p"];
+const PRESET_OPTIONS: readonly Preset[] = ["flat-fun", "3d-mania", "out-of-control", "custom"];
+const SET_OPTIONS: readonly PieceSet[] = ["flat", "basic", "extended"];
+const DIFFICULTY_OPTIONS: readonly Difficulty[] = ["easy", "normal", "hard"];
+const ALL_PLAYERS: readonly PlayerId[] = [1, 2];
 
 const PRESETS: Record<string, { pit: PitConfig; set: PieceSet }> = {
   "flat-fun": { pit: { width: 5, depth: 5, height: 12 }, set: "flat" },
@@ -203,13 +212,13 @@ export class Menu implements UiElement {
   }
 
   private modeButtons(): HTMLElement {
-    return this.optionGroup(
-      ["1p", "2p"],
+    return this.optionGroup<Mode>(
+      MODE_OPTIONS,
       this.state.mode,
       (val) => {
         this.state = {
           ...this.state,
-          mode: val as "1p" | "2p",
+          mode: val,
           crazyMode: val === "2p" ? false : this.state.crazyMode,
         };
         this.render();
@@ -219,15 +228,15 @@ export class Menu implements UiElement {
   }
 
   private presetButtons(): HTMLElement {
-    return this.optionGroup(
-      ["flat-fun", "3d-mania", "out-of-control", "custom"],
+    return this.optionGroup<Preset>(
+      PRESET_OPTIONS,
       this.state.preset,
       (val) => {
         const preset = PRESETS[val];
         if (preset) {
           this.state = {
             ...this.state,
-            preset: val as MenuState["preset"],
+            preset: val,
             set: preset.set,
             width: preset.pit.width,
             depth: preset.pit.depth,
@@ -248,11 +257,11 @@ export class Menu implements UiElement {
   }
 
   private setButtons(): HTMLElement {
-    return this.optionGroup(
-      ["flat", "basic", "extended"],
+    return this.optionGroup<PieceSet>(
+      SET_OPTIONS,
       this.state.set,
       (val) => {
-        this.state = { ...this.state, set: val as PieceSet };
+        this.state = { ...this.state, set: val };
         this.render();
       },
       { flat: "Flat", basic: "Basic", extended: "Extended" },
@@ -260,11 +269,11 @@ export class Menu implements UiElement {
   }
 
   private difficultyButtons(): HTMLElement {
-    return this.optionGroup(
-      ["easy", "normal", "hard"],
+    return this.optionGroup<Difficulty>(
+      DIFFICULTY_OPTIONS,
       this.state.difficulty,
       (val) => {
-        this.state = { ...this.state, difficulty: val as Difficulty };
+        this.state = { ...this.state, difficulty: val };
         this.render();
       },
       { easy: "Easy", normal: "Normal", hard: "Hard" },
@@ -308,8 +317,9 @@ export class Menu implements UiElement {
   }
 
   private crazyButtons(): HTMLElement {
+    const CRAZY_OPTIONS: readonly ("off" | "on")[] = ["off", "on"];
     return this.optionGroup(
-      ["off", "on"],
+      CRAZY_OPTIONS,
       this.state.crazyMode ? "on" : "off",
       (val) => {
         this.state = { ...this.state, crazyMode: val === "on" };
@@ -361,7 +371,7 @@ export class Menu implements UiElement {
 
     const grid = create("div", "bo-remap-grid-2col");
     const panels: KeyRemap[] = [];
-    ([1, 2] as const).forEach((p) => {
+    ALL_PLAYERS.forEach((p) => {
       const remap = new KeyRemap(p, initialSettings.bindings[p], saveBinding);
       panels.push(remap);
       grid.appendChild(remap.el);
@@ -489,18 +499,18 @@ export class Menu implements UiElement {
     return frag;
   }
 
-  private optionGroup(
-    options: string[],
-    active: string,
-    onSelect: (val: string) => void,
-    labels: Record<string, string>,
+  private optionGroup<T extends string>(
+    options: readonly T[],
+    active: T,
+    onSelect: (val: T) => void,
+    labels: Record<T, string>,
     disabled = false,
   ): HTMLElement {
     const wrap = create("div", "bo-options");
     if (disabled) wrap.classList.add("bo-options-disabled");
     options.forEach((opt) => {
       const btn = create("button", "bo-btn");
-      btn.textContent = labels[opt] ?? opt;
+      btn.textContent = labels[opt];
       if (opt === active) btn.classList.add("active");
       btn.disabled = disabled;
       btn.addEventListener("click", () => {
