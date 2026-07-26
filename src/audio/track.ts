@@ -94,7 +94,6 @@ const TOM_LOW = (): VoiceParams => ({
 
 const E1 = SidSynth.note(28);
 const F1 = SidSynth.note(29);
-const Fs1 = SidSynth.note(30);
 const B1 = SidSynth.note(35);
 const C2 = SidSynth.note(36);
 const Cs2 = SidSynth.note(37);
