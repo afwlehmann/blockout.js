@@ -2,7 +2,7 @@ import type { MatchConfig, PlayerId } from "../game/types.js";
 import type { EngineState } from "../game/engine.js";
 import type { MatchResult } from "../game/match.js";
 import { create, mount, type UiElement } from "./dom.js";
-import { saveHighScore, type ScoreEntry } from "./highScores.js";
+import { isHighScore, type ScoreEntry } from "./highScores.js";
 
 export interface GameOverData {
   readonly mode: "1p" | "2p";
@@ -14,15 +14,53 @@ export interface GameOverData {
 
 export type GameOverAction = "rematch" | "menu";
 
+interface PlayerScoreInfo {
+  readonly player: 1 | 2;
+  readonly state: EngineState;
+  readonly qualifies: boolean;
+  readonly name: string;
+}
+
 export class GameOverScreen implements UiElement {
   readonly el: HTMLElement;
   private readonly cleanup: () => void;
   private readonly actionHandler: (action: GameOverAction) => void;
+  private readonly saveHandler: (player: 1 | 2, name: string) => void;
+  private readonly playerScores: readonly PlayerScoreInfo[];
+  private readonly highScores: readonly ScoreEntry[];
+  private readonly names: Map<PlayerId, string> = new Map<PlayerId, string>();
 
-  constructor(data: GameOverData, onAction: (action: GameOverAction) => void) {
+  constructor(
+    data: GameOverData,
+    onAction: (action: GameOverAction) => void,
+    onSave: (player: 1 | 2, name: string) => void,
+  ) {
     this.el = create("div", "bo-overlay");
     this.cleanup = mount(this.el);
     this.actionHandler = onAction;
+    this.saveHandler = onSave;
+    this.highScores = data.highScores;
+
+    const players: readonly (1 | 2)[] = data.mode === "2p" ? [1, 2] : [1];
+    this.playerScores = players.map((p) => {
+      const state = data.states[p];
+      const entry: ScoreEntry = {
+        date: Date.now(),
+        score: state.score,
+        level: state.level,
+        faces: state.faces,
+        mode: data.mode,
+        winner: data.result?.winner ?? null,
+        name: "",
+      };
+      return {
+        player: p,
+        state,
+        qualifies: isHighScore(entry, data.highScores),
+        name: "",
+      };
+    });
+
     this.render(data);
   }
 
@@ -31,7 +69,7 @@ export class GameOverScreen implements UiElement {
   }
 
   private render(data: GameOverData): void {
-    const panel = create("div", "bo-panel");
+    const panel = create("div", "bo-panel bo-gameover-panel");
     panel.style.textAlign = "center";
 
     if (data.mode === "2p" && data.result) {
@@ -51,45 +89,68 @@ export class GameOverScreen implements UiElement {
       panel.appendChild(title);
     }
 
-    const states: readonly (readonly [1 | 2, EngineState])[] = [
-      [1, data.states[1]],
-      [2, data.states[2]],
-    ];
-    states.forEach(([player, state]) => {
+    this.playerScores.forEach((info) => {
       if (data.mode === "2p") {
         const lbl = create("div", "bo-result-label");
-        lbl.textContent = `Player ${player === 1 ? "1" : "2"}`;
+        lbl.textContent = `Player ${info.player === 1 ? "1" : "2"}`;
         panel.appendChild(lbl);
       }
       const score = create("div", "bo-result-score");
-      score.textContent = String(state.score);
+      score.textContent = String(info.state.score);
       panel.appendChild(score);
-      panel.appendChild(this.statRow("Level", String(state.level)));
-      panel.appendChild(this.statRow("Faces", String(state.faces)));
-      panel.appendChild(this.statRow("Cubes", String(state.cubes)));
+
+      const statGrid = create("div", "bo-stat-grid");
+      statGrid.appendChild(this.statCell("Level", String(info.state.level)));
+      statGrid.appendChild(this.statCell("Faces", String(info.state.faces)));
+      statGrid.appendChild(this.statCell("Cubes", String(info.state.cubes)));
+      panel.appendChild(statGrid);
+
+      if (info.qualifies) {
+        const nameRow = create("div", "bo-name-row");
+        const input = create("input", "bo-name-input");
+        input.type = "text";
+        input.maxLength = 12;
+        input.placeholder = "Enter your name";
+        input.value = info.name;
+        const saveBtn = create("button", "bo-btn bo-btn-primary bo-name-save");
+        saveBtn.textContent = "Save";
+        saveBtn.addEventListener("click", () => {
+          const name = input.value.trim();
+          this.setPlayerName(info.player, name || "Anonymous");
+          this.saveHandler(info.player, name || "Anonymous");
+          saveBtn.disabled = true;
+          input.disabled = true;
+          saveBtn.textContent = "Saved!";
+        });
+        nameRow.appendChild(input);
+        nameRow.appendChild(saveBtn);
+        panel.appendChild(nameRow);
+      }
     });
 
-    if (data.highScores.length > 0) {
-      const hsTitle = create("div", "bo-result-label");
-      hsTitle.textContent = "High Scores";
-      hsTitle.style.marginTop = "1.5rem";
-      panel.appendChild(hsTitle);
-      data.highScores.slice(0, 5).forEach((entry, i) => {
-        const row = create("div", "bo-result-row");
-        const lbl = create("span", "bo-result-label");
-        const modeTag = entry.mode === "1p" ? "1P" : "2P";
-        lbl.textContent = `${String(i + 1)}. ${modeTag} ${String(entry.score)}`;
-        const val = create("span", "bo-result-val");
-        const date = new Date(entry.date);
-        val.textContent = `${String(date.getMonth() + 1)}/${String(date.getDate())}`;
-        row.appendChild(lbl);
-        row.appendChild(val);
-        panel.appendChild(row);
-      });
-    }
+    const hsSection = create("div", "bo-hs-section");
+    const hsTitle = create("div", "bo-result-label");
+    hsTitle.textContent = "High Scores";
+    hsSection.appendChild(hsTitle);
+    const hsList = create("div", "bo-hs-list");
+    this.highScores.slice(0, 10).forEach((entry, i) => {
+      const row = create("div", "bo-hs-row");
+      const rank = create("span", "bo-hs-rank");
+      rank.textContent = `${String(i + 1)}.`;
+      const name = create("span", "bo-hs-name");
+      name.textContent = entry.name;
+      const modeTag = entry.mode === "1p" ? "1P" : "2P";
+      const score = create("span", "bo-hs-score");
+      score.textContent = `${modeTag} ${String(entry.score)}`;
+      row.appendChild(rank);
+      row.appendChild(name);
+      row.appendChild(score);
+      hsList.appendChild(row);
+    });
+    hsSection.appendChild(hsList);
+    panel.appendChild(hsSection);
 
     const buttons = create("div", "bo-options bo-gameover-buttons");
-    buttons.style.marginTop = "1.5rem";
     const rematch = create("button", "bo-btn bo-btn-primary");
     rematch.textContent = "Rematch";
     rematch.addEventListener("click", () => {
@@ -107,30 +168,33 @@ export class GameOverScreen implements UiElement {
     this.el.appendChild(panel);
   }
 
-  private statRow(label: string, value: string): HTMLElement {
-    const row = create("div", "bo-result-row");
-    const lbl = create("span", "bo-result-label");
+  private setPlayerName(player: 1 | 2, name: string): void {
+    this.names.set(player, name);
+  }
+
+  private statCell(label: string, value: string): HTMLElement {
+    const cell = create("div", "bo-stat-cell");
+    const lbl = create("div", "bo-stat-cell-label");
     lbl.textContent = label;
-    const val = create("span", "bo-result-val");
+    const val = create("div", "bo-stat-cell-value");
     val.textContent = value;
-    row.appendChild(lbl);
-    row.appendChild(val);
-    return row;
+    cell.appendChild(lbl);
+    cell.appendChild(val);
+    return cell;
   }
 }
 
-export const recordScore = (
+export const createScoreEntry = (
   state: EngineState,
   mode: MatchConfig["mode"],
   winner: PlayerId | null,
-): ScoreEntry => {
-  const entry: ScoreEntry = {
-    date: Date.now(),
-    score: state.score,
-    level: state.level,
-    faces: state.faces,
-    mode,
-    winner,
-  };
-  return saveHighScore(entry)[0] ?? entry;
-};
+  name: string,
+): ScoreEntry => ({
+  date: Date.now(),
+  score: state.score,
+  level: state.level,
+  faces: state.faces,
+  mode,
+  winner,
+  name,
+});

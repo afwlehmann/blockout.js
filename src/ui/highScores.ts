@@ -7,10 +7,12 @@ export interface ScoreEntry {
   readonly faces: number;
   readonly mode: MatchConfig["mode"];
   readonly winner: PlayerId | null;
+  readonly name: string;
 }
 
 const KEY = "blockout.highScores";
 const MAX_ENTRIES = 10;
+const DEFAULT_NAME = "Anonymous";
 
 export const loadHighScores = (): ScoreEntry[] => {
   try {
@@ -27,7 +29,8 @@ export const loadHighScores = (): ScoreEntry[] => {
         typeof obj.level === "number" &&
         typeof obj.faces === "number" &&
         (obj.mode === "1p" || obj.mode === "2p") &&
-        (obj.winner === null || obj.winner === 1 || obj.winner === 2)
+        (obj.winner === null || obj.winner === 1 || obj.winner === 2) &&
+        typeof obj.name === "string"
       );
     });
   } catch {
@@ -48,10 +51,12 @@ export const saveHighScore = (entry: ScoreEntry): ScoreEntry[] => {
 
 export const isHighScore = (
   entry: ScoreEntry,
-  existing: ScoreEntry[] = loadHighScores(),
+  existing: readonly ScoreEntry[] = loadHighScores(),
 ): boolean => {
   if (existing.length < MAX_ENTRIES) return true;
   const lowest = existing[existing.length - 1];
   if (!lowest) return true;
   return entry.score > lowest.score;
 };
+
+export { DEFAULT_NAME };

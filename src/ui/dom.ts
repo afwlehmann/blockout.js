@@ -244,10 +244,10 @@ export const injectStyles = (): void => {
       opacity: 0.4;
     }
     .bo-result-score {
-      font-size: 3rem;
+      font-size: 2rem;
       font-weight: 800;
       color: #fbbf24;
-      margin: 1rem 0;
+      margin: 0.5rem 0;
     }
     .bo-result-label {
       font-size: 0.75rem;
@@ -271,7 +271,100 @@ export const injectStyles = (): void => {
     .bo-winner {
       font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .bo-gameover-panel {
+      max-height: 90vh;
+      overflow-y: auto;
+      max-width: 460px;
+      padding: 1.5rem 2rem;
+    }
+    .bo-stat-grid {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 0.5rem 0;
+    }
+    .bo-stat-cell-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+    }
+    .bo-stat-cell-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .bo-name-row {
+      display: flex;
+      gap: 0.5rem;
+      margin: 0.75rem 0;
+      align-items: center;
+    }
+    .bo-name-input {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      border-radius: 8px;
+      padding: 0.4rem 0.6rem;
+      color: #e5e7eb;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+    }
+    .bo-name-input:focus {
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+    .bo-name-input:disabled {
+      opacity: 0.5;
+    }
+    .bo-name-save {
+      width: auto;
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      margin-top: 0;
+    }
+    .bo-name-save:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .bo-hs-section {
+      margin-top: 1rem;
+      text-align: left;
+    }
+    .bo-hs-list {
+      max-height: 180px;
+      overflow-y: auto;
+      margin-top: 0.5rem;
+    }
+    .bo-hs-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid rgba(100, 116, 139, 0.1);
+    }
+    .bo-hs-row:last-child {
+      border-bottom: none;
+    }
+    .bo-hs-rank {
+      font-size: 0.75rem;
+      color: #64748b;
+      min-width: 1.5rem;
+    }
+    .bo-hs-name {
+      flex: 1;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .bo-hs-score {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fbbf24;
     }
     .bo-preview {
       display: block;
@@ -326,6 +419,27 @@ export const injectStyles = (): void => {
       background: rgba(56, 189, 248, 0.2);
       border-color: rgba(56, 189, 248, 0.4);
       color: #f1f5f9;
+    }
+    .bo-remap-grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 600px) {
+      .bo-remap-grid-2col {
+        grid-template-columns: 1fr;
+      }
+    }
+    .bo-credit {
+      position: fixed;
+      bottom: 0.75rem;
+      right: 1.25rem;
+      font-size: 0.7rem;
+      color: #475569;
+      font-family: system-ui, -apple-system, sans-serif;
+      pointer-events: none;
+      z-index: 201;
+      opacity: 0.7;
     }
   `;
   document.head.appendChild(style);

@@ -10,8 +10,8 @@ import { InputSource, loadInputSettings } from "./input/input.js";
 import { create, mount, type UiElement } from "./ui/dom.js";
 import { Menu } from "./ui/menu.js";
 import { Hud } from "./ui/hud.js";
-import { GameOverScreen, recordScore } from "./ui/gameOver.js";
-import { loadHighScores } from "./ui/highScores.js";
+import { GameOverScreen, createScoreEntry } from "./ui/gameOver.js";
+import { loadHighScores, saveHighScore } from "./ui/highScores.js";
 import { AudioManager } from "./audio/manager.js";
 import type { SfxType } from "./audio/sfx.js";
 
@@ -261,6 +261,7 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
       pitViews.forEach((v) => {
         v.toggleCamera();
       });
+      layout.invalidateCache();
     } else if (action.kind === "toggleSound") {
       const enabled = audio.toggleSfx();
       hud?.setSoundEnabled(enabled);
@@ -472,12 +473,8 @@ const showGameOver = (session: GameSession): void => {
   const result: MatchResult | null = session.match ? session.match.state().result : null;
 
   const winner = result?.winner ?? null;
-  if (session.config.mode === "1p") {
-    recordScore(p1State, "1p", null);
-  } else {
-    if (e1) recordScore(p1State, "2p", winner);
-    if (e2) recordScore(p2State, "2p", winner);
-  }
+
+  const existingScores = loadHighScores();
 
   gameOverScreen = new GameOverScreen(
     {
@@ -485,7 +482,7 @@ const showGameOver = (session: GameSession): void => {
       result,
       states,
       config: session.config,
-      highScores: loadHighScores(),
+      highScores: existingScores,
     },
     (action) => {
       gameOverScreen?.dispose();
@@ -495,6 +492,11 @@ const showGameOver = (session: GameSession): void => {
       } else {
         startMenu();
       }
+    },
+    (player, name) => {
+      const state = states[player];
+      const entry = createScoreEntry(state, session.config.mode, winner, name);
+      saveHighScore(entry);
     },
   );
 };
