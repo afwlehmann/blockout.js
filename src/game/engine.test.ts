@@ -69,6 +69,53 @@ describe("PlayerEngine", () => {
     expect(symmetric || after.orientationIndex !== before.orientationIndex).toBe(true);
   });
 
+  it("four rotations around the same axis return to the original orientation", () => {
+    const e = makeEngine();
+    const before = e.state().active;
+    if (!before) throw new Error("no active piece");
+    const beforeCells = e.activeCells();
+    e.applyAction({ kind: "rotate", axis: "x", dir: 1 });
+    e.applyAction({ kind: "rotate", axis: "x", dir: 1 });
+    e.applyAction({ kind: "rotate", axis: "x", dir: 1 });
+    e.applyAction({ kind: "rotate", axis: "x", dir: 1 });
+    const afterCells = e.activeCells();
+    expect(afterCells).toEqual(beforeCells);
+  });
+
+  it("rotating X then Y is not the same as rotating Y then X", () => {
+    const e1 = makeEngine();
+    const e2 = makeEngine();
+    const before = e1.state().active;
+    if (!before) throw new Error("no active piece");
+    e1.applyAction({ kind: "rotate", axis: "x", dir: 1 });
+    e1.applyAction({ kind: "rotate", axis: "y", dir: 1 });
+    e2.applyAction({ kind: "rotate", axis: "y", dir: 1 });
+    e2.applyAction({ kind: "rotate", axis: "x", dir: 1 });
+    const c1 = e1.activeCells();
+    const c2 = e2.activeCells();
+    const symmetric = before.def.id === "I";
+    const keys1 = c1
+      .map((c) => `${String(c.x)},${String(c.y)},${String(c.z)}`)
+      .sort()
+      .join("|");
+    const keys2 = c2
+      .map((c) => `${String(c.x)},${String(c.y)},${String(c.z)}`)
+      .sort()
+      .join("|");
+    expect(symmetric || keys1 !== keys2).toBe(true);
+  });
+
+  it("rotating around X then undoing with -X returns to the original orientation", () => {
+    const e = makeEngine();
+    const before = e.state().active;
+    if (!before) throw new Error("no active piece");
+    const beforeCells = e.activeCells();
+    e.applyAction({ kind: "rotate", axis: "x", dir: 1 });
+    e.applyAction({ kind: "rotate", axis: "x", dir: -1 });
+    const afterCells = e.activeCells();
+    expect(afterCells).toEqual(beforeCells);
+  });
+
   it("pause toggles paused state", () => {
     const e = makeEngine();
     expect(e.state().paused).toBe(false);

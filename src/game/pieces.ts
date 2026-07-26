@@ -1,8 +1,11 @@
-import type { Vec3, PieceDef, Orientation, PieceOrientations } from "./types.js";
+import type { Vec3, PieceDef, Orientation, PieceOrientations, Axis, Direction } from "./types.js";
 
 const rotateX = (v: Vec3): Vec3 => ({ x: v.x, y: -v.z, z: v.y });
 const rotateY = (v: Vec3): Vec3 => ({ x: v.z, y: v.y, z: -v.x });
 const rotateZ = (v: Vec3): Vec3 => ({ x: -v.y, y: v.x, z: v.z });
+
+const rotateFn = (axis: Axis): ((v: Vec3) => Vec3) =>
+  axis === "x" ? rotateX : axis === "y" ? rotateY : rotateZ;
 
 const apply = (fn: (v: Vec3) => Vec3, cells: readonly Vec3[]): Vec3[] => cells.map((c) => fn(c));
 
@@ -61,10 +64,41 @@ const generateOrientations = (cells: readonly Vec3[]): Orientation[] => {
   return result.orientations;
 };
 
-const buildPiece = (def: PieceDef): PieceOrientations => ({
-  def,
-  orientations: generateOrientations(def.cells),
-});
+const AXES: readonly Axis[] = ["x", "y", "z"];
+const DIRS: readonly Direction[] = [1, -1];
+
+const applyRotation = (axis: Axis, dir: Direction, cells: readonly Vec3[]): Vec3[] => {
+  const fn = rotateFn(axis);
+  const times = dir === 1 ? 1 : 3;
+  return Array.from({ length: times }, () => fn).reduce((c, f) => apply(f, c), [...cells]);
+};
+
+const buildTransitions = (orientations: readonly Orientation[]): readonly number[][] => {
+  const keyToIndex = new Map<string, number>();
+  orientations.forEach((o, i) => {
+    keyToIndex.set(o.key, i);
+  });
+  return orientations.map((o) => {
+    const row: number[] = [];
+    AXES.forEach((axis, ai) => {
+      DIRS.forEach((dir, di) => {
+        const norm = normalize(applyRotation(axis, dir, o.cells));
+        const col = ai * 2 + di;
+        row[col] = keyToIndex.get(norm.key) ?? 0;
+      });
+    });
+    return row;
+  });
+};
+
+const buildPiece = (def: PieceDef): PieceOrientations => {
+  const orientations = generateOrientations(def.cells);
+  return {
+    def,
+    orientations,
+    transitions: buildTransitions(orientations),
+  };
+};
 
 export const buildPieces = (defs: readonly PieceDef[]): PieceOrientations[] => defs.map(buildPiece);
 

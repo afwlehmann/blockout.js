@@ -1,11 +1,10 @@
-import type { MatchConfig, PieceOrientations, PieceDef, Vec3, Orientation } from "./types.js";
+import type { MatchConfig, PieceOrientations, PieceDef, Vec3, Axis, Direction } from "./types.js";
 import { Pit, type LockResult } from "./pit.js";
 import { Rng } from "./rng.js";
 import { buildPieces } from "./pieces.js";
 import { piecesForSet } from "./registry.js";
 
-export type Axis = "x" | "y" | "z";
-export type Direction = 1 | -1;
+export type { Axis, Direction } from "./types.js";
 
 export type PlayerAction =
   | { readonly kind: "move"; readonly dx: number; readonly dz: number }
@@ -60,13 +59,16 @@ const scoreFor = (layers: number, level: number): number => {
 };
 
 const rotateIndex = (
-  orientations: readonly Orientation[],
+  transitions: readonly (readonly number[])[],
   current: number,
+  axis: Axis,
   dir: Direction,
 ): number => {
-  if (orientations.length <= 1) return current;
-  const step = dir === 1 ? 1 : -1;
-  return (current + step + orientations.length) % orientations.length;
+  const row = transitions[current];
+  if (!row) return current;
+  const col =
+    axis === "x" ? (dir === 1 ? 0 : 1) : axis === "y" ? (dir === 1 ? 2 : 3) : dir === 1 ? 4 : 5;
+  return row[col] ?? current;
 };
 
 export class PlayerEngine {
@@ -269,8 +271,11 @@ export class PlayerEngine {
   private tryRotate(axis: Axis, dir: Direction): boolean {
     const current = this.active;
     if (!current) return false;
-    const orientations = this.pieceOrientations(current.def).orientations;
-    const nextIdx = rotateIndex(orientations, current.orientationIndex, dir);
+    const po = this.pieceOrientations(current.def);
+    const orientations = po.orientations;
+    if (orientations.length <= 1) return false;
+    const nextIdx = rotateIndex(po.transitions, current.orientationIndex, axis, dir);
+    if (nextIdx === current.orientationIndex) return false;
     const cells = orientations[nextIdx]?.cells ?? [];
     const kicks = [
       { x: 0, y: 0, z: 0 },
@@ -301,7 +306,6 @@ export class PlayerEngine {
         z: current.origin.z + placed.z,
       },
     };
-    void axis;
     return true;
   }
 

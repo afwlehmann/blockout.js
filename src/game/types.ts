@@ -32,6 +32,9 @@ export interface PieceDef {
   readonly cells: readonly Vec3[];
 }
 
+export type Axis = "x" | "y" | "z";
+export type Direction = 1 | -1;
+
 export interface Orientation {
   readonly cells: readonly Vec3[];
   readonly key: string;
@@ -40,6 +43,7 @@ export interface Orientation {
 export interface PieceOrientations {
   readonly def: PieceDef;
   readonly orientations: readonly Orientation[];
+  readonly transitions: readonly (readonly number[])[];
 }
 
 export interface Settings {
