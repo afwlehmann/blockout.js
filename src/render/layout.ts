@@ -117,12 +117,7 @@ export class SplitScreenLayout {
     return this.targets.map((t) => t.region);
   }
 
-  render(
-    renderer: THREE.WebGLRenderer,
-    scene: THREE.Scene,
-    containerWidth: number,
-    containerHeight: number,
-  ): void {
+  render(renderer: THREE.WebGLRenderer, containerWidth: number, containerHeight: number): void {
     renderer.setScissorTest(true);
     this.targets.forEach((target) => {
       const { x: rx, y: ry, width: rw, height: rh } = target.region;
@@ -147,7 +142,7 @@ export class SplitScreenLayout {
         target.pitView.setSideAspect(w / h);
       }
 
-      renderer.render(scene, target.camera);
+      renderer.render(target.pitView.scene, target.camera);
 
       if (!target.isMain) {
         const labelEl = this.labelEls.get(target.label);

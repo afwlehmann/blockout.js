@@ -157,24 +157,7 @@ const createDust = (): THREE.Points => {
   return new THREE.Points(geom, mat);
 };
 
-export const createScene = (container: HTMLElement): SceneSetup => {
-  const canvas = document.createElement("canvas");
-  container.appendChild(canvas);
-
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: true,
-    alpha: false,
-  });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.VSMShadowMap;
-  renderer.setClearColor(0x01010a, 1);
-
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x01010a, 40, 130);
-
+export const populateSpaceEnv = (scene: THREE.Scene): SpaceEnv => {
   const starfield = createStarfield();
   scene.add(starfield);
 
@@ -188,7 +171,7 @@ export const createScene = (container: HTMLElement): SceneSetup => {
   const dust = createDust();
   scene.add(dust);
 
-  const spaceEnv: SpaceEnv = {
+  return {
     starfield,
     nebulae,
     planets,
@@ -207,6 +190,31 @@ export const createScene = (container: HTMLElement): SceneSetup => {
       });
     },
   };
+};
+
+const createGameScene = (): THREE.Scene => {
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x01010a, 40, 130);
+  return scene;
+};
+
+export const createScene = (container: HTMLElement): SceneSetup => {
+  const canvas = document.createElement("canvas");
+  container.appendChild(canvas);
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: false,
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.VSMShadowMap;
+  renderer.setClearColor(0x01010a, 1);
+
+  const scene = createGameScene();
+  const spaceEnv = populateSpaceEnv(scene);
 
   return { scene, renderer, canvas, spaceEnv };
 };

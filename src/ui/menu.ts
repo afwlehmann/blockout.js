@@ -186,7 +186,11 @@ export class Menu implements UiElement {
       ["1p", "2p"],
       this.state.mode,
       (val) => {
-        this.state = { ...this.state, mode: val as "1p" | "2p" };
+        this.state = {
+          ...this.state,
+          mode: val as "1p" | "2p",
+          crazyMode: val === "2p" ? false : this.state.crazyMode,
+        };
         this.render();
       },
       { "1p": "1 Player", "2p": "2 Players" },
@@ -291,6 +295,7 @@ export class Menu implements UiElement {
         this.render();
       },
       { off: "Off", on: "Crazy!" },
+      this.state.mode === "2p",
     );
   }
 
@@ -466,13 +471,17 @@ export class Menu implements UiElement {
     active: string,
     onSelect: (val: string) => void,
     labels: Record<string, string>,
+    disabled = false,
   ): HTMLElement {
     const wrap = create("div", "bo-options");
+    if (disabled) wrap.classList.add("bo-options-disabled");
     options.forEach((opt) => {
       const btn = create("button", "bo-btn");
       btn.textContent = labels[opt] ?? opt;
       if (opt === active) btn.classList.add("active");
+      btn.disabled = disabled;
       btn.addEventListener("click", () => {
+        if (disabled) return;
         onSelect(opt);
       });
       wrap.appendChild(btn);

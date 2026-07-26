@@ -126,20 +126,23 @@ columns + shared Global Controls section).
   (5×5×10 extended), plus Custom pit dimensions
 - **3 difficulties**: Easy, Normal, Hard (gravity speed)
 - **2-player split-screen**: shared seedable piece sequence, face-clear
-  raises opponent's stack, win by target faces or KO
-- **Crazy Mode**: pit view rotates on a sine wave (z: 0.15 rad @ 0.5 Hz,
-  x: 0.08 rad @ 0.3 Hz)
+  raises opponent's stack, win by target faces or KO. Each player gets
+  its own THREE.Scene (no cross-visibility between pits). Crazy Mode,
+  camera toggle, and side views are disabled in 2P.
+- **Crazy Mode (1P only)**: camera-based quaternion spline on upper
+  hemisphere, sliding window of 7 CatmullRom waypoints, speed ramps
+  4s → 1.5s over 30s. Greyed out in menu when 2P is selected.
 - **Next-piece preview**: 2D canvas in HUD, updated each frame
 - **High scores**: localStorage top-10, displayed on game-over screen
 - **Key remap**: per-player interactive rebinding with live display
-- **Camera toggle**: angled top-down ↔ side view (C or R). The top-down
-  camera is positioned directly above the pit center, looking straight
-  down at the **bottom center** of the pit (`y = 0`), so the bottom
-  center is always aligned with the middle of the screen.
+- **Camera toggle (1P only)**: angled top-down ↔ side view (C or R).
+  The top-down camera is positioned directly above the pit center,
+  looking straight down at the **bottom center** of the pit (`y = 0`),
+  so the bottom center is always aligned with the middle of the screen.
 - **Side views (1P only)**: 4 orthogonal views (Front, Right, Left,
   Back) in a 2×2 grid on the right side of the screen, with labels at
   the top of each view.
-- **Full shadows**: PCFSoftShadowMap on all meshes, key light directly
+- **Full shadows**: VSMShadowMap on all meshes, key light directly
   above so shadows fall straight down
 - **Audio**: SID-style synth with filter sweeps, original 3-min chiptune
   (130 BPM, A phrygian dominant, 4-section A-B-A'-C structure),

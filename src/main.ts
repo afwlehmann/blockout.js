@@ -1,4 +1,4 @@
-import { createScene, createLights, onResize } from "./render/scene.js";
+import { createScene, createLights, populateSpaceEnv, onResize } from "./render/scene.js";
 import * as THREE from "three";
 import { PitView } from "./render/pitView.js";
 import { SplitScreenLayout } from "./render/layout.js";
@@ -47,6 +47,7 @@ const createPauseOverlay = (): PauseOverlay => {
 
 interface GameSession {
   readonly config: MatchConfig;
+  readonly players: readonly PlayerId[];
   readonly engines: Readonly<Partial<Record<PlayerId, PlayerEngine>>>;
   readonly pitViews: readonly PitView[];
   readonly layout: SplitScreenLayout;
@@ -169,57 +170,62 @@ const wireEngineEvents = (engine: PlayerEngine, pitView: PitView): void => {
 const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   stopAmbient();
   const players: readonly PlayerId[] = config.mode === "2p" ? PLAYERS : [1];
-  const pitGap = 2;
-  const pitSpacing = config.pit.width + pitGap;
+  const is2P = config.mode === "2p";
+  const effectiveCrazy = is2P ? false : crazyMode;
 
   const engines: Partial<Record<PlayerId, PlayerEngine>> = {};
   const pitViews: PitView[] = [];
   const cleanups: (() => void)[] = [];
   let match: Match | null = null;
 
-  if (config.mode === "2p") {
+  const createPlayerScene = (): THREE.Scene => {
+    const s = new THREE.Scene();
+    s.fog = new THREE.Fog(0x01010a, 40, 130);
+    populateSpaceEnv(s);
+    createLights(s);
+    return s;
+  };
+
+  if (is2P) {
     match = new Match(config, Math.floor(Math.random() * 1000000));
     const m = match;
-    PLAYERS.forEach((p) => {
+    players.forEach((p) => {
       engines[p] = m.engines[p];
-    });
-    PLAYERS.forEach((p) => {
-      const e = engines[p];
-      const v = pitViews[p - 1];
-      if (e && v) wireEngineEvents(e, v);
     });
     m.on((ev) => {
       if (ev.type === "attack") {
         audio.playSfx("attack", ev.layers);
       }
     });
-    const views = PLAYERS.map((p, i) => {
-      const view = new PitView(config.pit, i * pitSpacing);
-      scene.add(view.group);
-      return view;
+
+    players.forEach((p) => {
+      const ps = createPlayerScene();
+      const view = new PitView(config.pit, 0, ps);
+      pitViews.push(view);
+      const e = engines[p];
+      if (e) wireEngineEvents(e, view);
     });
-    pitViews.push(...views);
+
     cleanups.push(() => {
-      views.forEach((v) => {
-        scene.remove(v.group);
+      pitViews.forEach((v) => {
         v.dispose();
       });
     });
 
-    PLAYERS.forEach((p) => {
+    players.forEach((p) => {
       input.onAction(p, (action) => {
-        const m = match;
-        if (!m) return;
+        const mm = match;
+        if (!mm) return;
         switch (action.kind) {
           case "move":
-            m.applyAction(p, { kind: "move", dx: action.dx, dz: action.dz });
+            mm.applyAction(p, { kind: "move", dx: action.dx, dz: action.dz });
             break;
           case "rotate":
-            m.applyAction(p, { kind: "rotate", axis: action.axis, dir: action.dir });
+            mm.applyAction(p, { kind: "rotate", axis: action.axis, dir: action.dir });
             break;
           case "hardDrop":
           case "softDrop":
-            m.applyAction(p, { kind: action.kind });
+            mm.applyAction(p, { kind: action.kind });
             break;
           default:
             break;
@@ -229,12 +235,10 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   } else {
     const engine = new PlayerEngine(config, new Rng(Math.floor(Math.random() * 1000000)));
     engines[1] = engine;
-    const view = new PitView(config.pit, 0);
-    scene.add(view.group);
+    const view = new PitView(config.pit, 0, scene);
     pitViews.push(view);
     wireEngineEvents(engine, view);
     cleanups.push(() => {
-      scene.remove(view.group);
       view.dispose();
     });
 
@@ -257,7 +261,7 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   }
 
   input.onGlobalAction((action) => {
-    if (action.kind === "cameraToggle") {
+    if (action.kind === "cameraToggle" && !is2P) {
       pitViews.forEach((v) => {
         v.toggleCamera();
       });
@@ -279,16 +283,17 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
 
   currentSession = {
     config,
+    players,
     engines,
     pitViews,
     layout,
     match,
-    crazyMode,
+    crazyMode: effectiveCrazy,
     cleanup: cleanups,
   };
 
   pitViews.forEach((v) => {
-    v.setCrazyMode(crazyMode);
+    v.setCrazyMode(effectiveCrazy);
   });
 
   hud = new Hud(players, {
@@ -317,12 +322,12 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
 const togglePause = (): void => {
   const session = currentSession;
   if (!session) return;
-  const anyPaused = PLAYERS.some((p) => {
+  const anyPaused = session.players.some((p) => {
     const e = session.engines[p];
     return e ? e.state().paused : false;
   });
   const newPaused = !anyPaused;
-  PLAYERS.forEach((p) => {
+  session.players.forEach((p) => {
     const e = session.engines[p];
     if (e) e.setPaused(newPaused);
   });
@@ -344,7 +349,7 @@ const confirmExitToMenu = (): void => {
   const session = currentSession;
   if (!session) return;
   if (exitConfirmOverlay) return;
-  PLAYERS.forEach((p) => {
+  session.players.forEach((p) => {
     const e = session.engines[p];
     if (e && !e.state().paused) e.setPaused(true);
   });
@@ -372,7 +377,7 @@ const confirmExitToMenu = (): void => {
       exitConfirmOverlay.dispose();
       exitConfirmOverlay = null;
     }
-    PLAYERS.forEach((p) => {
+    session.players.forEach((p) => {
       const e = session.engines[p];
       if (e) e.setPaused(false);
     });
@@ -427,7 +432,7 @@ const loop = (now: number): void => {
   const dt = now - lastFrame;
   lastFrame = now;
 
-  PLAYERS.forEach((p) => {
+  session.players.forEach((p) => {
     const engine = session.engines[p];
     if (engine && !engine.state().paused) engine.update(dt);
   });
@@ -435,19 +440,19 @@ const loop = (now: number): void => {
   spaceEnv.update(dt);
 
   session.pitViews.forEach((v, i) => {
-    const engine = session.engines[PLAYERS[i] ?? 1];
+    const engine = session.engines[session.players[i] ?? 1];
     if (engine) v.update(engine);
     v.tick(dt);
   });
 
-  session.layout.render(renderer, scene, container.clientWidth, container.clientHeight);
+  session.layout.render(renderer, container.clientWidth, container.clientHeight);
 
-  PLAYERS.forEach((p) => {
+  session.players.forEach((p) => {
     const engine = session.engines[p];
     if (engine) hud?.updatePlayer(p, engine.state());
   });
 
-  const anyGameOver = PLAYERS.some((p) => {
+  const anyGameOver = session.players.some((p) => {
     const engine = session.engines[p];
     return engine ? engine.state().gameOver : false;
   });

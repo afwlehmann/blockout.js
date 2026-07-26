@@ -35,6 +35,7 @@ const SLIDE_DURATION = 350;
 
 export class PitView {
   readonly group: THREE.Group;
+  readonly scene: THREE.Scene;
   readonly camera: THREE.PerspectiveCamera;
   readonly sideCameras: readonly THREE.OrthographicCamera[];
   readonly sideLabels: readonly string[];
@@ -70,10 +71,12 @@ export class PitView {
   private readonly dirLabels: THREE.Sprite[];
   onSlideComplete: (() => void) | null = null;
 
-  constructor(config: PitConfig, originX: number) {
+  constructor(config: PitConfig, originX: number, scene: THREE.Scene) {
     this.config = config;
+    this.scene = scene;
     this.group = new THREE.Group();
     this.group.position.x = originX;
+    this.scene.add(this.group);
 
     this.colors = PALETTE.map((c) => new THREE.Color(c));
 
@@ -738,6 +741,7 @@ export class PitView {
   }
 
   dispose(): void {
+    this.scene.remove(this.group);
     this.blockMesh.dispose();
     this.pieceView?.dispose();
     this.disposeGroup(this.walls);

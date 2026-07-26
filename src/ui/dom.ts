@@ -118,6 +118,14 @@ export const injectStyles = (): void => {
       border-color: rgba(56, 189, 248, 0.5);
       color: #f1f5f9;
     }
+    .bo-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .bo-btn:disabled:hover {
+      background: rgba(51, 65, 85, 0.6);
+      border-color: rgba(100, 116, 139, 0.3);
+    }
     .bo-btn-primary {
       background: linear-gradient(135deg, #38bdf8, #6366f1);
       border: none;
