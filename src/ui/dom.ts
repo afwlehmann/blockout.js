@@ -449,6 +449,19 @@ export const injectStyles = (): void => {
       z-index: 201;
       opacity: 0.7;
     }
+    .bo-crumple {
+      animation: bo-fade-out 0.4s ease-in forwards;
+    }
+    @keyframes bo-fade-out {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+    }
   `;
   document.head.appendChild(style);
 };

@@ -63,6 +63,8 @@ export class Menu implements UiElement {
   private showHighScores = false;
   private readonly keyListener: (e: KeyboardEvent) => void;
   private focusLabel: string | null = null;
+  private panelEl: HTMLElement | null = null;
+  private starting = false;
 
   constructor() {
     injectStyles();
@@ -102,7 +104,21 @@ export class Menu implements UiElement {
   }
 
   private start(): void {
-    if (this.startHandler) {
+    if (this.starting) return;
+    this.starting = true;
+    const panel = this.panelEl;
+    if (panel) {
+      panel.classList.add("bo-crumple");
+      panel.addEventListener(
+        "animationend",
+        () => {
+          if (this.startHandler) {
+            this.startHandler({ config: toConfig(this.state), crazyMode: this.state.crazyMode });
+          }
+        },
+        { once: true },
+      );
+    } else if (this.startHandler) {
       this.startHandler({ config: toConfig(this.state), crazyMode: this.state.crazyMode });
     }
   }
@@ -118,6 +134,7 @@ export class Menu implements UiElement {
     this.remapPanels = [];
     this.el.innerHTML = "";
     const panel = create("div", "bo-panel");
+    this.panelEl = panel;
 
     if (this.showHighScores) {
       panel.appendChild(this.highScoresContent());

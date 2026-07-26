@@ -169,6 +169,7 @@ const wireEngineEvents = (engine: PlayerEngine, pitView: PitView): void => {
 
 const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   stopAmbient();
+  container.classList.add("bo-fade-in");
   const players: readonly PlayerId[] = config.mode === "2p" ? PLAYERS : [1];
   const is2P = config.mode === "2p";
   const effectiveCrazy = is2P ? false : crazyMode;
@@ -531,6 +532,7 @@ const cleanupSession = (): void => {
     cancelAnimationFrame(rafId);
     rafId = null;
   }
+  container.classList.remove("bo-fade-in");
   if (currentSession) {
     currentSession.layout.dispose();
     currentSession.cleanup.forEach((fn) => {
