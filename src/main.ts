@@ -113,6 +113,11 @@ const wireEngineEvents = (engine: PlayerEngine, pitView: PitView): void => {
   engine.on((ev) => {
     const sfx = sfxForEngineEvent(ev);
     if (sfx) audio.playSfx(sfx.type, sfx.intensity);
+    if (ev.type === "lock" && ev.dropDistance && ev.dropDistance > 0) {
+      const intensity = Math.min(ev.dropDistance, 20);
+      pitView.triggerShake(intensity * 0.02);
+      audio.playSfx("rumble", intensity);
+    }
     if (ev.type === "clear" && ev.clearedLayers && ev.preClearGrid) {
       const postGrid = engine.pit.snapshot();
       const layers = ev.clearedLayers.length;

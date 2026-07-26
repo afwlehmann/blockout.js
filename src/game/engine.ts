@@ -34,6 +34,7 @@ export interface EngineEvent {
   readonly blockOut?: boolean;
   readonly level?: number;
   readonly preClearGrid?: readonly number[];
+  readonly dropDistance?: number;
 }
 
 export interface EngineState {
@@ -311,13 +312,15 @@ export class PlayerEngine {
 
   private hardDrop(): readonly EngineEvent[] {
     if (!this.active) return [];
+    const startY = this.active.origin.y;
     Array.from({ length: this.config.pit.height + 1 }).forEach(() => {
       this.tryMove(0, -1, 0);
     });
-    return this.lockActive();
+    const dropDistance = startY - this.active.origin.y;
+    return this.lockActive(dropDistance);
   }
 
-  private lockActive(): readonly EngineEvent[] {
+  private lockActive(dropDistance = 0): readonly EngineEvent[] {
     if (!this.active) return [];
     const orientations = this.pieceOrientations(this.active.def).orientations;
     const cells = orientations[this.active.orientationIndex]?.cells ?? [];
@@ -325,7 +328,7 @@ export class PlayerEngine {
     const lockResult: LockResult = this.pit.lock(this.active.origin, cells, this.active.def.color);
     this.cubes += cells.length;
     this.active = null;
-    const events: EngineEvent[] = [{ type: "lock" }];
+    const events: EngineEvent[] = [{ type: "lock", dropDistance }];
     if (lockResult.clearedLayers.length > 0) {
       this.faces += lockResult.clearedLayers.length;
       this.score += scoreFor(lockResult.clearedLayers.length, this.level);

@@ -42,6 +42,8 @@ export class PitView {
   private usingSideCamera = false;
   private crazyMode = false;
   private crazyTime = 0;
+  private shakeTime = 0;
+  private shakeIntensity = 0;
   private readonly particles: Particle[] = [];
   private slideAnim: SlideAnim | null = null;
   onSlideComplete: (() => void) | null = null;
@@ -219,6 +221,11 @@ export class PitView {
     }
   }
 
+  triggerShake(intensity: number): void {
+    this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
+    this.shakeTime = 0;
+  }
+
   triggerClear(
     clearedLayers: readonly number[],
     preGrid: readonly number[],
@@ -338,6 +345,24 @@ export class PitView {
   tick(dt: number): void {
     this.updateParticles(dt);
     this.updateSlide(dt);
+    this.updateShake(dt);
+  }
+
+  private updateShake(dt: number): void {
+    const dtSec = dt / 1000;
+    const SHAKE_DURATION = 0.4;
+    if (this.shakeIntensity <= 0) return;
+    this.shakeTime += dtSec;
+    if (this.shakeTime >= SHAKE_DURATION) {
+      this.shakeIntensity = 0;
+      this.group.position.y = 0;
+      this.group.position.z = 0;
+      return;
+    }
+    const decay = 1 - this.shakeTime / SHAKE_DURATION;
+    const mag = this.shakeIntensity * decay;
+    this.group.position.y = (Math.random() - 0.5) * mag;
+    this.group.position.z = (Math.random() - 0.5) * mag;
   }
 
   get activeCamera(): THREE.PerspectiveCamera {

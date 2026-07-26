@@ -12,7 +12,8 @@ export type SfxType =
   | "levelUp"
   | "attack"
   | "gameOver"
-  | "thud";
+  | "thud"
+  | "rumble";
 
 const MINOR_CHORD: readonly [number, number, number] = [0, 3, 7];
 const MAJOR_CHORD: readonly [number, number, number] = [0, 4, 7];
@@ -74,6 +75,9 @@ export class Sfx {
         break;
       case "thud":
         this.thud(intensity);
+        break;
+      case "rumble":
+        this.rumble(intensity);
         break;
       case "gameOver":
         this.gameOver();
@@ -317,5 +321,40 @@ export class Sfx {
       t,
     );
     this.synth.playNoise(0.15, 200 + layers * 50, 0.12, t);
+  }
+
+  private rumble(intensity: number): void {
+    const t = this.synth.currentTime;
+    const dropDistance = Math.max(1, intensity);
+    const vol = Math.min(0.1 + dropDistance * 0.012, 0.25);
+    const dur = Math.min(0.2 + dropDistance * 0.03, 0.6);
+    const freq = 35;
+    this.synth.playSfxVoice(
+      {
+        waveform: "sawtooth",
+        frequency: freq,
+        attack: 0.005,
+        decay: dur * 0.5,
+        sustain: 0.2,
+        release: dur * 0.5,
+        volume: vol,
+      },
+      dur,
+      t,
+    );
+    this.synth.playSfxVoice(
+      {
+        waveform: "sine",
+        frequency: freq * 0.5,
+        attack: 0.005,
+        decay: dur * 0.4,
+        sustain: 0.1,
+        release: dur * 0.6,
+        volume: vol * 0.8,
+      },
+      dur,
+      t,
+    );
+    this.synth.playNoise(dur, 150 + dropDistance * 20, vol * 0.6, t);
   }
 }
