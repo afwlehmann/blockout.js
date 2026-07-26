@@ -59,12 +59,20 @@ export class Menu implements UiElement {
   private remapPanel: KeyRemap | null = null;
   private remapPlayer: PlayerId = 1;
   private showControls = false;
+  private readonly keyListener: (e: KeyboardEvent) => void;
 
   constructor() {
     injectStyles();
     this.state = defaultState();
     this.el = create("div", "bo-overlay");
     this.cleanup = mount(this.el);
+    this.keyListener = (e: KeyboardEvent): void => {
+      if (e.code === "Enter" && !this.remapPanel?.isListening) {
+        e.preventDefault();
+        this.start();
+      }
+    };
+    window.addEventListener("keydown", this.keyListener);
     this.render();
   }
 
@@ -73,8 +81,15 @@ export class Menu implements UiElement {
   }
 
   dispose(): void {
+    window.removeEventListener("keydown", this.keyListener);
     if (this.remapPanel) this.remapPanel.dispose();
     this.cleanup();
+  }
+
+  private start(): void {
+    if (this.startHandler) {
+      this.startHandler({ config: toConfig(this.state), crazyMode: this.state.crazyMode });
+    }
   }
 
   private render(): void {
@@ -282,9 +297,7 @@ export class Menu implements UiElement {
     const btn = create("button", "bo-btn bo-btn-primary");
     btn.textContent = "Start Game";
     btn.addEventListener("click", () => {
-      if (this.startHandler) {
-        this.startHandler({ config: toConfig(this.state), crazyMode: this.state.crazyMode });
-      }
+      this.start();
     });
     return btn;
   }

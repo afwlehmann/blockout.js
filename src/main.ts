@@ -269,6 +269,8 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
       hud?.setMusicEnabled(enabled);
     } else if (action.kind === "pause") {
       togglePause();
+    } else if (action.kind === "exitToMenu") {
+      confirmExitToMenu();
     }
   });
 
@@ -333,6 +335,89 @@ const togglePause = (): void => {
     }
     audio.resumeMusic();
   }
+};
+
+let exitConfirmOverlay: PauseOverlay | null = null;
+
+const confirmExitToMenu = (): void => {
+  const session = currentSession;
+  if (!session) return;
+  if (exitConfirmOverlay) return;
+  PLAYERS.forEach((p) => {
+    const e = session.engines[p];
+    if (e && !e.state().paused) e.setPaused(true);
+  });
+  audio.pauseMusic();
+
+  const el = create("div", "bo-overlay");
+  el.style.background = "rgba(1, 1, 10, 0.8)";
+  const panel = create("div", "bo-panel");
+  panel.style.textAlign = "center";
+  panel.style.padding = "2rem 3rem";
+  const title = create("h1", "bo-title");
+  title.textContent = "Exit to Menu?";
+  title.style.fontSize = "2rem";
+  const hint = create("p", "bo-subtitle");
+  hint.textContent = "Your current game will be lost.";
+  const btnRow = create("div", "bo-gameover-buttons");
+  btnRow.style.marginTop = "1.5rem";
+  const confirmBtn = create("button", "bo-btn-primary");
+  confirmBtn.textContent = "Exit to Menu";
+  const cancelBtn = create("button", "bo-btn");
+  cancelBtn.textContent = "Cancel";
+
+  const cancelExit = (): void => {
+    if (exitConfirmOverlay) {
+      exitConfirmOverlay.dispose();
+      exitConfirmOverlay = null;
+    }
+    PLAYERS.forEach((p) => {
+      const e = session.engines[p];
+      if (e) e.setPaused(false);
+    });
+    audio.resumeMusic();
+  };
+
+  const confirmExit = (): void => {
+    if (exitConfirmOverlay) {
+      exitConfirmOverlay.dispose();
+      exitConfirmOverlay = null;
+    }
+    cleanupSession();
+    startMenu();
+  };
+
+  confirmBtn.addEventListener("click", confirmExit);
+  cancelBtn.addEventListener("click", cancelExit);
+
+  const keyHandler = (e: KeyboardEvent): void => {
+    if (e.code === "Escape") {
+      e.preventDefault();
+      cancelExit();
+      window.removeEventListener("keydown", keyHandler);
+    } else if (e.code === "Enter") {
+      e.preventDefault();
+      confirmExit();
+      window.removeEventListener("keydown", keyHandler);
+    }
+  };
+  window.addEventListener("keydown", keyHandler);
+
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(confirmBtn);
+  panel.appendChild(title);
+  panel.appendChild(hint);
+  panel.appendChild(btnRow);
+  el.appendChild(panel);
+  const cleanup = mount(el);
+  exitConfirmOverlay = {
+    el,
+    cleanup,
+    dispose(): void {
+      window.removeEventListener("keydown", keyHandler);
+      cleanup();
+    },
+  };
 };
 
 const loop = (now: number): void => {
@@ -445,6 +530,14 @@ const cleanupSession = (): void => {
   if (gameOverScreen) {
     gameOverScreen.dispose();
     gameOverScreen = null;
+  }
+  if (pauseOverlay) {
+    pauseOverlay.dispose();
+    pauseOverlay = null;
+  }
+  if (exitConfirmOverlay) {
+    exitConfirmOverlay.dispose();
+    exitConfirmOverlay = null;
   }
 };
 

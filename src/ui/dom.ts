@@ -56,7 +56,8 @@ export const injectStyles = (): void => {
       align-items: center;
       justify-content: center;
       background: rgba(10, 10, 15, 0.85);
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(1.5px);
+      z-index: 200;
     }
     .bo-panel {
       background: rgba(30, 41, 59, 0.95);
@@ -130,6 +131,10 @@ export const injectStyles = (): void => {
     }
     .bo-btn-primary:hover {
       filter: brightness(1.1);
+    }
+    .bo-gameover-buttons {
+      display: flex;
+      gap: 1rem;
     }
     .bo-gameover-buttons .bo-btn,
     .bo-gameover-buttons .bo-btn-primary {
