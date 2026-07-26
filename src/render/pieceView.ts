@@ -28,7 +28,7 @@ export class PieceView {
       emissive: color,
       emissiveIntensity: 0.15,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.85,
     });
 
     this.ghostMaterial = new THREE.MeshBasicMaterial({

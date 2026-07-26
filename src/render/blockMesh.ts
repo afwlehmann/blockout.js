@@ -8,6 +8,11 @@ const BLOCK_SIZE = CELL - GAP;
 const boxGeom = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 const edgeGeom = new THREE.EdgesGeometry(boxGeom);
 
+const LAYER_COLORS: readonly number[] = [
+  0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff, 0x44ffff, 0xff8844, 0x88ff44, 0x4488ff,
+  0xff44aa, 0xaaff44, 0x44aaff,
+];
+
 export const blockGeometry = boxGeom;
 
 export const makeBlockMaterial = (color: number): THREE.MeshStandardMaterial =>
@@ -39,11 +44,10 @@ export class BlockMesh {
 
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      roughness: 0.35,
+      roughness: 0.4,
       metalness: 0.1,
-      emissive: 0xffffff,
-      emissiveIntensity: 0.12,
-      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
     });
 
     this.mesh = new THREE.InstancedMesh(boxGeom, material, this.capacity);
@@ -81,7 +85,8 @@ export class BlockMesh {
     this.dummy.updateMatrix();
     this.mesh.setMatrixAt(count, this.dummy.matrix);
     this.edgeMesh.setMatrixAt(count, this.dummy.matrix);
-    this.tmpColor.setHex(value);
+    const layerColor = LAYER_COLORS[y % LAYER_COLORS.length] ?? 0x1e3a5f;
+    this.tmpColor.setHex(layerColor);
     colorAttr.setXYZ(count, this.tmpColor.r, this.tmpColor.g, this.tmpColor.b);
   }
 
