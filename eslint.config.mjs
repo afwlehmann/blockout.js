@@ -4,6 +4,7 @@ import vitest from "@vitest/eslint-plugin";
 import prettier from "eslint-config-prettier";
 
 export default tseslint.config(
+  { ignores: ["dist/", "node_modules/"] },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,

@@ -1,8 +1,10 @@
 node_modules/
 dist/
 bin/
-.envrc
-.direnv
+.direnv/
+.pre-commit-config.yaml
+result
+result-*
 .idea/
 .vscode/
 .cursor/
