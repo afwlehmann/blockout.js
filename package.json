@@ -1,6 +1,6 @@
 {
   "name": "blockout.js",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A browser-based 3D Tetris (Blockout) game with split-screen 2-player mode",
   "type": "module",
   "license": "MIT",

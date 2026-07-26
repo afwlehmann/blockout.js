@@ -187,19 +187,52 @@ export class KeyboardInput {
     }
     this.heldKeys.add(code);
 
+    const matchedPlayers: { player: PlayerId; action: GameAction }[] = [];
+    const globalActions: GameAction[] = [];
+
     ([1, 2] as const).forEach((player) => {
       const binding = this.bindings[player];
       const action = lookup(binding, code);
       if (!action) return;
-      e.preventDefault();
-      this.dispatch(player, action);
+      if (this.isGlobalAction(action)) {
+        globalActions.push(action);
+      } else {
+        matchedPlayers.push({ player, action });
+      }
+    });
 
+    if (matchedPlayers.length === 0 && globalActions.length === 0) return;
+    e.preventDefault();
+
+    matchedPlayers.forEach(({ player, action }) => {
+      this.dispatch(player, action);
       if (this.shouldRepeat(action)) {
         const delay = window.setTimeout(() => {
           this.startRepeat(player, code, action);
         }, this.repeatDelayMs);
         this.repeatTimers.set(code, delay);
       }
+    });
+
+    const globalAction = globalActions[0];
+    if (globalAction) {
+      this.dispatchGlobal(globalAction);
+    }
+  }
+
+  private isGlobalAction(action: GameAction): boolean {
+    return (
+      action.kind === "cameraToggle" ||
+      action.kind === "toggleSound" ||
+      action.kind === "toggleMusic" ||
+      action.kind === "toggleGhost" ||
+      action.kind === "pause"
+    );
+  }
+
+  private dispatchGlobal(action: GameAction): void {
+    this.globalHandlers.forEach((h) => {
+      h(action);
     });
   }
 
@@ -230,9 +263,6 @@ export class KeyboardInput {
     if (handler) {
       handler(action);
     }
-    this.globalHandlers.forEach((h) => {
-      h(action);
-    });
   }
 }
 

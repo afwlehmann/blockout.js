@@ -117,7 +117,7 @@ const startGame = (config: MatchConfig): void => {
     });
 
     PLAYERS.forEach((p) => {
-      input.onAction((action) => {
+      input.onAction(p, (action) => {
         const m = match;
         if (!m) return;
         switch (action.kind) {
@@ -129,7 +129,6 @@ const startGame = (config: MatchConfig): void => {
             break;
           case "hardDrop":
           case "softDrop":
-          case "pause":
             m.applyAction(p, { kind: action.kind });
             break;
           default:
@@ -149,7 +148,7 @@ const startGame = (config: MatchConfig): void => {
       view.dispose();
     });
 
-    input.onAction((action) => {
+    input.onAction(1, (action) => {
       switch (action.kind) {
         case "move":
           engine.applyAction({ kind: "move", dx: action.dx, dz: action.dz });
@@ -159,7 +158,6 @@ const startGame = (config: MatchConfig): void => {
           break;
         case "softDrop":
         case "hardDrop":
-        case "pause":
           engine.applyAction({ kind: action.kind });
           break;
         default:
@@ -179,6 +177,11 @@ const startGame = (config: MatchConfig): void => {
     } else if (action.kind === "toggleMusic") {
       const enabled = audio.toggleMusic();
       hud?.setMusicEnabled(enabled);
+    } else if (action.kind === "pause") {
+      PLAYERS.forEach((p) => {
+        const e = currentSession?.engines[p];
+        if (e) e.setPaused(!e.state().paused);
+      });
     }
   });
 

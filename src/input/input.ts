@@ -16,17 +16,15 @@ export { PLAYER1_LAYOUT, PLAYER2_LAYOUT, SINGLE_PLAYER_LAYOUT } from "./keyboard
 
 export class InputSource {
   private readonly keyboard: KeyboardInput;
-  private readonly player: PlayerId;
 
-  private constructor(keyboard: KeyboardInput, player: PlayerId) {
+  private constructor(keyboard: KeyboardInput) {
     this.keyboard = keyboard;
-    this.player = player;
   }
 
   static create(settings: InputSettings): InputSource {
     const keyboard = new KeyboardInput(settings.bindings);
     keyboard.attach();
-    return new InputSource(keyboard, 1);
+    return new InputSource(keyboard);
   }
 
   static createSinglePlayer(): InputSource {
@@ -36,8 +34,8 @@ export class InputSource {
     return InputSource.create(settings);
   }
 
-  onAction(handler: ActionHandler): void {
-    this.keyboard.onAction(this.player, handler);
+  onAction(player: PlayerId, handler: ActionHandler): void {
+    this.keyboard.onAction(player, handler);
   }
 
   onGlobalAction(handler: ActionHandler): void {
