@@ -47,7 +47,7 @@
             pname = "blockout.js";
             version = pkgVersion;
             src = ./.;
-            npmDepsHash = "sha256-V41OM0KfAf4CQeN4P6k6gMcAPmjjkpTjii9QGbNt/kM=";
+            npmDepsHash = "sha256-LnMSOvaqP67lnqgxpIxqSm5kClkEpdh+92okgqmEmaE=";
             dontNpmBuild = true;
             buildPhase = ''
               runHook preBuild
