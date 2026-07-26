@@ -118,6 +118,13 @@ export class PlayerEngine {
     return found;
   }
 
+  activeCells(): readonly Vec3[] {
+    const current = this.active;
+    if (!current) return [];
+    const orientations = this.pieceOrientations(current.def).orientations;
+    return orientations[current.orientationIndex]?.cells ?? [];
+  }
+
   private spawn(): void {
     const def = this.nextPiece;
     this.nextPiece = this.draw();
