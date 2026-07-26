@@ -161,6 +161,21 @@ export const injectStyles = (): void => {
       gap: 0.5rem;
       pointer-events: auto;
     }
+    .bo-side-label {
+      position: absolute;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      pointer-events: none;
+      display: none;
+      z-index: 50;
+    }
     .bo-hud-player {
       background: rgba(30, 41, 59, 0.7);
       border: 1px solid rgba(100, 116, 139, 0.2);

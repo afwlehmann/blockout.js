@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { PitView } from "./pitView.js";
+import { create, mount } from "../ui/dom.js";
 
 export interface ViewportRegion {
   readonly x: number;
@@ -15,13 +16,14 @@ interface RenderTarget {
   readonly region: ViewportRegion;
   readonly pitView: PitView;
   readonly isMain: boolean;
+  readonly label: string;
 }
 
-const MAIN_WIDTH = 0.75;
-const SIDE_AREA_WIDTH = 0.25;
-const SIDE_GAP = 0.005;
+const MAIN_WIDTH = 0.87;
+const SIDE_AREA_WIDTH = 0.13;
+const SIDE_GAP = 0.012;
 const SIDE_CELL_WIDTH = (SIDE_AREA_WIDTH - SIDE_GAP) / 2;
-const SIDE_CELL_HEIGHT = 0.48;
+const SIDE_CELL_HEIGHT = 0.24;
 const SIDE_OFFSET_Y = 1 - SIDE_CELL_HEIGHT * 2 - SIDE_GAP;
 
 const SIDE_POSITIONS: readonly (readonly [number, number])[] = [
@@ -35,10 +37,34 @@ export class SplitScreenLayout {
   readonly pitViews: readonly PitView[];
   private readonly sideViewMode: boolean;
   private cachedTargets: readonly RenderTarget[] | null = null;
+  private readonly labelEls: Map<string, HTMLElement> = new Map<string, HTMLElement>();
+  private readonly labelCleanup: (() => void) | null;
 
   constructor(pitViews: readonly PitView[]) {
     this.pitViews = pitViews;
     this.sideViewMode = pitViews.length === 1;
+    this.labelCleanup = this.sideViewMode ? this.createLabels() : null;
+  }
+
+  private createLabels(): (() => void) | null {
+    const labels = ["Front", "Right", "Left", "Back"];
+    const cleanups: (() => void)[] = [];
+    labels.forEach((label) => {
+      const el = create("div", "bo-side-label");
+      el.textContent = label;
+      const cleanup = mount(el);
+      this.labelEls.set(label, el);
+      cleanups.push(cleanup);
+    });
+    return () => {
+      cleanups.forEach((c) => {
+        c();
+      });
+    };
+  }
+
+  dispose(): void {
+    this.labelCleanup?.();
   }
 
   private buildTargets(): readonly RenderTarget[] {
@@ -47,7 +73,7 @@ export class SplitScreenLayout {
       if (!view) return [];
       const mainRegion: ViewportRegion = { x: 0, y: 0, width: MAIN_WIDTH, height: 1 };
       return [
-        { camera: view.activeCamera, region: mainRegion, pitView: view, isMain: true },
+        { camera: view.activeCamera, region: mainRegion, pitView: view, isMain: true, label: "" },
         ...view.sideCameras.map((cam, i) => {
           const [col, row] = SIDE_POSITIONS[i] ?? [0, 0];
           return {
@@ -60,6 +86,7 @@ export class SplitScreenLayout {
             },
             pitView: view,
             isMain: false,
+            label: view.sideLabels[i] ?? "",
           };
         }),
       ];
@@ -74,6 +101,7 @@ export class SplitScreenLayout {
       },
       pitView: view,
       isMain: true,
+      label: "",
     }));
   }
 
@@ -105,11 +133,31 @@ export class SplitScreenLayout {
 
       if (target.isMain) {
         target.pitView.setAspect(w / h);
+        if (this.sideViewMode) {
+          const viewportCenter = MAIN_WIDTH / 2;
+          const screenCenter = 0.5;
+          const ndcShift = ((viewportCenter - screenCenter) / MAIN_WIDTH) * 2;
+          target.pitView.setMainViewShift(ndcShift);
+        }
       } else {
         target.pitView.setSideAspect(w / h);
       }
 
       renderer.render(scene, target.camera);
+
+      if (!target.isMain) {
+        const labelEl = this.labelEls.get(target.label);
+        if (labelEl) {
+          const cssTop = containerHeight - y - h;
+          labelEl.style.left = `${String(Math.round(x + w / 2))}px`;
+          labelEl.style.top = `${String(Math.round(cssTop + 2))}px`;
+          labelEl.style.display = "block";
+        }
+      }
+    });
+    this.labelEls.forEach((el, key) => {
+      const visible = this.targets.some((t) => !t.isMain && t.label === key);
+      if (!visible) el.style.display = "none";
     });
     renderer.setScissorTest(false);
   }

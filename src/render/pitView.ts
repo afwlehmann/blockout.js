@@ -32,6 +32,7 @@ export class PitView {
   readonly group: THREE.Group;
   readonly camera: THREE.PerspectiveCamera;
   readonly sideCameras: readonly THREE.OrthographicCamera[];
+  readonly sideLabels: readonly string[];
   private readonly config: PitConfig;
   private readonly blockMesh: BlockMesh;
   private readonly colors: THREE.Color[];
@@ -56,6 +57,7 @@ export class PitView {
     this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 200);
     this.sideCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 200);
     this.sideCameras = this.buildSideCameras();
+    this.sideLabels = ["Front", "Right", "Left", "Back"];
     this.positionCameras();
 
     this.blockMesh = new BlockMesh(config, PALETTE.length);
@@ -73,22 +75,23 @@ export class PitView {
     const cx = this.group.position.x + (w - 1) / 2;
     const cy = h / 2;
     const cz = (d - 1) / 2;
-    const halfW = w / 2 + 0.5;
-    const halfH = h / 2 + 0.5;
+    const halfW = w / 2 + 1;
+    const halfD = d / 2 + 1;
+    const halfH = h / 2 + 1;
     const dist = Math.max(w, d, h) * 2;
 
-    const make = (x: number, y: number, z: number): THREE.OrthographicCamera => {
-      const cam = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.1, dist * 2);
+    const make = (x: number, y: number, z: number, horiz: number): THREE.OrthographicCamera => {
+      const cam = new THREE.OrthographicCamera(-horiz, horiz, halfH, -halfH, 0.1, dist * 2);
       cam.position.set(x, y, z);
       cam.lookAt(cx, cy, cz);
       return cam;
     };
 
     return [
-      make(cx, cy, cz + dist),
-      make(cx, cy, cz - dist),
-      make(cx + dist, cy, cz),
-      make(cx - dist, cy, cz),
+      make(cx, cy, cz + dist, halfW),
+      make(cx + dist, cy, cz, halfD),
+      make(cx - dist, cy, cz, halfD),
+      make(cx, cy, cz - dist, halfW),
     ];
   }
 
@@ -98,9 +101,9 @@ export class PitView {
     const cy = h / 2;
     const cz = (d - 1) / 2;
 
-    const mainDist = Math.max(w, d) * 2.4;
-    this.camera.position.set(cx, cy + mainDist, cz);
-    this.camera.lookAt(cx, cy, cz);
+    const mainDist = Math.max(w, d) * 4.0;
+    this.camera.position.set(cx, mainDist, cz);
+    this.camera.lookAt(cx, 0, cz);
 
     const sideDist = Math.max(w, d, h) * 1.8;
     this.sideCamera.position.set(cx + sideDist, cy, cz);
@@ -183,7 +186,7 @@ export class PitView {
       const x = x0 + gx;
       pts.push(new THREE.Vector3(x, y0, z0), new THREE.Vector3(x, y1, z0));
       pts.push(new THREE.Vector3(x, y0, z1), new THREE.Vector3(x, y1, z1));
-      pts.push(new THREE.Vector3(x, y0, z0), new THREE.Vector3(x, y0, z1));
+      pts.push(new THREE.Vector3(x, y0 + 0.01, z0), new THREE.Vector3(x, y0 + 0.01, z1));
     }
     for (let gy = 0; gy <= h; gy++) {
       const y = y0 + gy;
@@ -196,7 +199,7 @@ export class PitView {
       const z = z0 + gz;
       pts.push(new THREE.Vector3(x0, y0, z), new THREE.Vector3(x0, y1, z));
       pts.push(new THREE.Vector3(x1, y0, z), new THREE.Vector3(x1, y1, z));
-      pts.push(new THREE.Vector3(x0, y0, z), new THREE.Vector3(x1, y0, z));
+      pts.push(new THREE.Vector3(x0, y0 + 0.01, z), new THREE.Vector3(x1, y0 + 0.01, z));
     }
 
     const geom = new THREE.BufferGeometry().setFromPoints(pts);
@@ -395,12 +398,20 @@ export class PitView {
     this.sideCamera.updateProjectionMatrix();
   }
 
+  setMainViewShift(shift: number): void {
+    const m = this.camera.projectionMatrix.elements;
+    m[8] = shift;
+  }
+
   setSideAspect(aspect: number): void {
     const { width: w, depth: d, height: h } = this.config;
-    const halfH = h / 2 + 0.5;
-    this.sideCameras.forEach((cam) => {
-      const isFrontBack = cam.position.z !== this.group.position.z + (d - 1) / 2;
-      const horiz = isFrontBack ? (w / 2 + 0.5) * aspect : (d / 2 + 0.5) * aspect;
+    const halfH = h / 2 + 1;
+    const halfW = w / 2 + 1;
+    const halfD = d / 2 + 1;
+    const horizDims = [halfW, halfD, halfD, halfW];
+    this.sideCameras.forEach((cam, i) => {
+      const baseHoriz = horizDims[i] ?? halfW;
+      const horiz = Math.max(baseHoriz, baseHoriz * aspect);
       cam.left = -horiz;
       cam.right = horiz;
       cam.top = halfH;
