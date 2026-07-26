@@ -7,12 +7,10 @@ import {
   type GameAction,
   type ActionHandler,
   type InputSettings,
-  SINGLE_PLAYER_LAYOUT,
-  PLAYER2_LAYOUT,
 } from "./keyboard.js";
 
 export type { GameAction, ActionHandler, KeyBinding, InputSettings };
-export { PLAYER1_LAYOUT, PLAYER2_LAYOUT, SINGLE_PLAYER_LAYOUT } from "./keyboard.js";
+export { PLAYER1_LAYOUT, PLAYER2_LAYOUT } from "./keyboard.js";
 
 export class InputSource {
   private readonly keyboard: KeyboardInput;
@@ -25,13 +23,6 @@ export class InputSource {
     const keyboard = new KeyboardInput(settings.bindings);
     keyboard.attach();
     return new InputSource(keyboard);
-  }
-
-  static createSinglePlayer(): InputSource {
-    const settings: InputSettings = {
-      bindings: { 1: SINGLE_PLAYER_LAYOUT, 2: PLAYER2_LAYOUT },
-    };
-    return InputSource.create(settings);
   }
 
   onAction(player: PlayerId, handler: ActionHandler): void {

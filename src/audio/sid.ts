@@ -110,6 +110,25 @@ export class SidSynth {
     this.filter.Q.value = params.resonance;
   }
 
+  scheduleFilter(frequency: number, resonance: number, startTime: number): void {
+    this.filter.frequency.setValueAtTime(frequency, startTime);
+    this.filter.Q.setValueAtTime(resonance, startTime);
+  }
+
+  scheduleFilterSweep(
+    fromFreq: number,
+    toFreq: number,
+    duration: number,
+    resonance: number,
+    startTime: number,
+  ): void {
+    const safeFrom = Math.max(20, fromFreq);
+    const safeTo = Math.max(20, toFreq);
+    this.filter.frequency.setValueAtTime(safeFrom, startTime);
+    this.filter.frequency.exponentialRampToValueAtTime(safeTo, startTime + duration);
+    this.filter.Q.setValueAtTime(resonance, startTime);
+  }
+
   get currentTime(): number {
     return this.ctx.currentTime;
   }

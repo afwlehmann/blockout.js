@@ -72,9 +72,7 @@ export class PitView {
       metalness: 0.0,
     });
     const edgeMat = new THREE.LineBasicMaterial({
-      color: 0x334155,
-      transparent: true,
-      opacity: 0.6,
+      color: 0xc0c0c0,
     });
 
     const group = new THREE.Group();

@@ -31,9 +31,14 @@ const codeToLabel = (code: string): string => {
   if (code === "ControlLeft") return "L-Ctrl";
   if (code === "ControlRight") return "R-Ctrl";
   if (code === "Escape") return "Esc";
+  if (code === "Space") return "Space";
   if (code === "Period") return ".";
   if (code === "Slash") return "/";
   return code;
+};
+
+const bindingToLabel = (codes: readonly string[]): string => {
+  return codes.map(codeToLabel).join(", ");
 };
 
 export class KeyRemap implements UiElement {
@@ -76,7 +81,7 @@ export class KeyRemap implements UiElement {
       const lbl = create("span", "bo-remap-label");
       lbl.textContent = label;
       const btn = create("button", "bo-btn bo-remap-btn");
-      btn.textContent = codeToLabel(this.binding[key]);
+      btn.textContent = bindingToLabel(this.binding[key]);
       btn.addEventListener("click", () => {
         this.startListening(key, btn);
       });
@@ -110,7 +115,7 @@ export class KeyRemap implements UiElement {
     e.preventDefault();
     e.stopPropagation();
     const code = e.code;
-    this.binding = { ...this.binding, [this.listeningFor]: code };
+    this.binding = { ...this.binding, [this.listeningFor]: [code] };
     this.listeningBtn.textContent = codeToLabel(code);
     this.stopListening();
     this.onRebind(this.playerId, this.binding);

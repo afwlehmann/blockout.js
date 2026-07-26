@@ -11,66 +11,64 @@ export type GameAction =
 export type ActionHandler = (action: GameAction) => void;
 
 export interface KeyBinding {
-  readonly moveLeft: string;
-  readonly moveRight: string;
-  readonly moveForward: string;
-  readonly moveBack: string;
-  readonly rotateXPos: string;
-  readonly rotateXNeg: string;
-  readonly rotateYPos: string;
-  readonly rotateYNeg: string;
-  readonly rotateZPos: string;
-  readonly rotateZNeg: string;
-  readonly hardDrop: string;
-  readonly softDrop: string;
-  readonly pause: string;
-  readonly cameraToggle: string;
-  readonly toggleSound: string;
-  readonly toggleMusic: string;
-  readonly toggleGhost: string;
+  readonly moveLeft: readonly string[];
+  readonly moveRight: readonly string[];
+  readonly moveForward: readonly string[];
+  readonly moveBack: readonly string[];
+  readonly rotateXPos: readonly string[];
+  readonly rotateXNeg: readonly string[];
+  readonly rotateYPos: readonly string[];
+  readonly rotateYNeg: readonly string[];
+  readonly rotateZPos: readonly string[];
+  readonly rotateZNeg: readonly string[];
+  readonly hardDrop: readonly string[];
+  readonly softDrop: readonly string[];
+  readonly pause: readonly string[];
+  readonly cameraToggle: readonly string[];
+  readonly toggleSound: readonly string[];
+  readonly toggleMusic: readonly string[];
+  readonly toggleGhost: readonly string[];
 }
 
 export const PLAYER1_LAYOUT: KeyBinding = {
-  moveLeft: "KeyA",
-  moveRight: "KeyD",
-  moveForward: "KeyW",
-  moveBack: "KeyS",
-  rotateXPos: "KeyQ",
-  rotateXNeg: "KeyE",
-  rotateYPos: "Digit1",
-  rotateYNeg: "Digit3",
-  rotateZPos: "KeyZ",
-  rotateZNeg: "KeyC",
-  hardDrop: "ShiftLeft",
-  softDrop: "ControlLeft",
-  pause: "Escape",
-  cameraToggle: "KeyR",
-  toggleSound: "KeyN",
-  toggleMusic: "KeyB",
-  toggleGhost: "KeyH",
+  moveLeft: ["KeyH", "ArrowLeft"],
+  moveRight: ["KeyL", "ArrowRight"],
+  moveForward: ["KeyK", "ArrowUp"],
+  moveBack: ["KeyJ", "ArrowDown"],
+  rotateXNeg: ["KeyQ"],
+  rotateXPos: ["KeyA"],
+  rotateYNeg: ["KeyW"],
+  rotateYPos: ["KeyS"],
+  rotateZNeg: ["KeyE"],
+  rotateZPos: ["KeyD"],
+  hardDrop: ["Space"],
+  softDrop: ["ShiftLeft"],
+  pause: ["Escape"],
+  cameraToggle: ["KeyR"],
+  toggleSound: ["KeyO"],
+  toggleMusic: ["KeyB"],
+  toggleGhost: ["KeyG"],
 };
 
 export const PLAYER2_LAYOUT: KeyBinding = {
-  moveLeft: "ArrowLeft",
-  moveRight: "ArrowRight",
-  moveForward: "ArrowUp",
-  moveBack: "ArrowDown",
-  rotateXPos: "KeyU",
-  rotateXNeg: "KeyO",
-  rotateYPos: "Digit7",
-  rotateYNeg: "Digit9",
-  rotateZPos: "KeyM",
-  rotateZNeg: "Period",
-  hardDrop: "ShiftRight",
-  softDrop: "ControlRight",
-  pause: "Escape",
-  cameraToggle: "Slash",
-  toggleSound: "KeyN",
-  toggleMusic: "KeyB",
-  toggleGhost: "KeyH",
+  moveLeft: ["ArrowLeft"],
+  moveRight: ["ArrowRight"],
+  moveForward: ["ArrowUp"],
+  moveBack: ["ArrowDown"],
+  rotateXPos: ["KeyU"],
+  rotateXNeg: ["KeyO"],
+  rotateYPos: ["Digit7"],
+  rotateYNeg: ["Digit9"],
+  rotateZPos: ["KeyM"],
+  rotateZNeg: ["Period"],
+  hardDrop: ["ShiftRight"],
+  softDrop: ["ControlRight"],
+  pause: ["Escape"],
+  cameraToggle: ["Slash"],
+  toggleSound: ["KeyN"],
+  toggleMusic: ["KeyB"],
+  toggleGhost: ["KeyH"],
 };
-
-export const SINGLE_PLAYER_LAYOUT: KeyBinding = PLAYER2_LAYOUT;
 
 const moveAction = (dx: number, dz: number): PlayerAction => ({
   kind: "move",
@@ -85,44 +83,24 @@ const rotateAction = (axis: Axis, dir: Direction): PlayerAction => ({
 });
 
 const lookup = (binding: KeyBinding, code: string): GameAction | null => {
-  switch (code) {
-    case binding.moveLeft:
-      return moveAction(-1, 0);
-    case binding.moveRight:
-      return moveAction(1, 0);
-    case binding.moveForward:
-      return moveAction(0, -1);
-    case binding.moveBack:
-      return moveAction(0, 1);
-    case binding.rotateXPos:
-      return rotateAction("x", 1);
-    case binding.rotateXNeg:
-      return rotateAction("x", -1);
-    case binding.rotateYPos:
-      return rotateAction("y", 1);
-    case binding.rotateYNeg:
-      return rotateAction("y", -1);
-    case binding.rotateZPos:
-      return rotateAction("z", 1);
-    case binding.rotateZNeg:
-      return rotateAction("z", -1);
-    case binding.hardDrop:
-      return { kind: "hardDrop" };
-    case binding.softDrop:
-      return { kind: "softDrop" };
-    case binding.pause:
-      return { kind: "pause" };
-    case binding.cameraToggle:
-      return { kind: "cameraToggle" };
-    case binding.toggleSound:
-      return { kind: "toggleSound" };
-    case binding.toggleMusic:
-      return { kind: "toggleMusic" };
-    case binding.toggleGhost:
-      return { kind: "toggleGhost" };
-    default:
-      return null;
-  }
+  if (binding.moveLeft.includes(code)) return moveAction(-1, 0);
+  if (binding.moveRight.includes(code)) return moveAction(1, 0);
+  if (binding.moveForward.includes(code)) return moveAction(0, -1);
+  if (binding.moveBack.includes(code)) return moveAction(0, 1);
+  if (binding.rotateXPos.includes(code)) return rotateAction("x", 1);
+  if (binding.rotateXNeg.includes(code)) return rotateAction("x", -1);
+  if (binding.rotateYPos.includes(code)) return rotateAction("y", 1);
+  if (binding.rotateYNeg.includes(code)) return rotateAction("y", -1);
+  if (binding.rotateZPos.includes(code)) return rotateAction("z", 1);
+  if (binding.rotateZNeg.includes(code)) return rotateAction("z", -1);
+  if (binding.hardDrop.includes(code)) return { kind: "hardDrop" };
+  if (binding.softDrop.includes(code)) return { kind: "softDrop" };
+  if (binding.pause.includes(code)) return { kind: "pause" };
+  if (binding.cameraToggle.includes(code)) return { kind: "cameraToggle" };
+  if (binding.toggleSound.includes(code)) return { kind: "toggleSound" };
+  if (binding.toggleMusic.includes(code)) return { kind: "toggleMusic" };
+  if (binding.toggleGhost.includes(code)) return { kind: "toggleGhost" };
+  return null;
 };
 
 export class KeyboardInput {
