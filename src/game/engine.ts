@@ -52,6 +52,7 @@ export interface EngineState {
 const GRAVITY_BASE_MS = 800;
 const GRAVITY_MIN_MS = 50;
 const LEVEL_FACES_PER_LEVEL = 10;
+const ALL_CLEAR_BONUS = 10000;
 
 const scoreFor = (layers: number, level: number): number => {
   const perLayer = [0, 100, 300, 600, 1000, 1500];
@@ -344,6 +345,7 @@ export class PlayerEngine {
       }
     }
     if (lockResult.blockOut) {
+      this.score += ALL_CLEAR_BONUS;
       events.push({ type: "blockOut", blockOut: true });
     }
     if (lockResult.overflowed) {
