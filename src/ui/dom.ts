@@ -141,10 +141,24 @@ export const injectStyles = (): void => {
     }
     .bo-hud {
       position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+    }
+    .bo-hud-top {
+      position: absolute;
       top: 0; left: 0; right: 0;
       display: flex;
       justify-content: space-between;
       padding: 1rem 1.5rem;
+      pointer-events: auto;
+    }
+    .bo-hud-controls {
+      position: absolute;
+      bottom: 1rem;
+      left: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
       pointer-events: auto;
     }
     .bo-hud-player {
@@ -168,11 +182,6 @@ export const injectStyles = (): void => {
       font-size: 1.25rem;
       font-weight: 700;
       color: #f1f5f9;
-    }
-    .bo-hud-row {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
     }
     .bo-icon-btn {
       background: rgba(30, 41, 59, 0.7);

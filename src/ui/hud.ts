@@ -61,6 +61,7 @@ export class Hud implements UiElement {
 
   private render(players: readonly PlayerId[]): void {
     this.el.innerHTML = "";
+    const top = create("div", "bo-hud-top");
     players.forEach((p) => {
       const card = create("div", `bo-hud-player${p === 2 ? " right" : ""}`);
       const scoreLbl = create("div", "bo-hud-label");
@@ -88,14 +89,15 @@ export class Hud implements UiElement {
       card.appendChild(facesVal);
       card.appendChild(nextLbl);
       card.appendChild(canvas);
-      this.el.appendChild(card);
+      top.appendChild(card);
       this.scoreEls.set(p, scoreVal);
       this.levelEls.set(p, levelVal);
       this.facesEls.set(p, facesVal);
       this.previewCanvases.set(p, canvas);
     });
+    this.el.appendChild(top);
 
-    const center = create("div", "bo-hud-row");
+    const left = create("div", "bo-hud-controls");
     this.soundBtn = create("button", "bo-icon-btn");
     this.soundBtn.textContent = "🔊";
     this.soundBtn.title = "Toggle SFX (N)";
@@ -114,10 +116,10 @@ export class Hud implements UiElement {
     pauseBtn.addEventListener("click", () => {
       this.callbacks.onPause();
     });
-    center.appendChild(this.soundBtn);
-    center.appendChild(this.musicBtn);
-    center.appendChild(pauseBtn);
-    this.el.appendChild(center);
+    left.appendChild(this.soundBtn);
+    left.appendChild(this.musicBtn);
+    left.appendChild(pauseBtn);
+    this.el.appendChild(left);
   }
 
   updatePlayer(player: PlayerId, state: EngineState): void {
