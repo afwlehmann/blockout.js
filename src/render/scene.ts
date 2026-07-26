@@ -118,7 +118,10 @@ const createPlanets = (): THREE.Mesh[] => {
       roughness: 0.8,
       metalness: 0.1,
     });
-    const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 24, 16), mat);
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(radius * 1.5, radius * 1.5, radius * 1.5),
+      mat,
+    );
     const angle = (i / PLANET_COLORS.length) * Math.PI * 2 + Math.random();
     const dist = PLANET_DISTANCES[i] ?? 60;
     mesh.position.set(Math.cos(angle) * dist, (Math.random() - 0.3) * 30, Math.sin(angle) * dist);

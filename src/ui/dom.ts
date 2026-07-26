@@ -64,7 +64,7 @@ export const injectStyles = (): void => {
       border: 1px solid rgba(100, 116, 139, 0.3);
       border-radius: 16px;
       padding: 2.5rem 3rem;
-      max-width: 420px;
+      max-width: 500px;
       width: 90%;
       box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
     }
