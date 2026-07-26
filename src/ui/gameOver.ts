@@ -37,7 +37,7 @@ export class GameOverScreen implements UiElement {
       if (data.result.winner === null) {
         winner.textContent = "Draw!";
       } else {
-        winner.textContent = `Player ${data.result.winner} wins!`;
+        winner.textContent = `Player ${data.result.winner === 1 ? "1" : "2"} wins!`;
       }
       panel.appendChild(winner);
       const reason = create("p", "bo-subtitle");
@@ -51,7 +51,7 @@ export class GameOverScreen implements UiElement {
 
     const states: readonly (readonly [1 | 2, EngineState])[] = [
       [1, data.states[1]],
-      ...(data.states[2] ? ([[2, data.states[2]]] as const) : []),
+      [2, data.states[2]],
     ];
     states.forEach(([player, state]) => {
       if (data.mode === "2p") {

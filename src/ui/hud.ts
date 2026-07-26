@@ -64,15 +64,21 @@ export class Hud implements UiElement {
     this.soundBtn = create("button", "bo-icon-btn");
     this.soundBtn.textContent = "🔊";
     this.soundBtn.title = "Toggle SFX (N)";
-    this.soundBtn.addEventListener("click", () => this.callbacks.onToggleSound());
+    this.soundBtn.addEventListener("click", () => {
+      this.callbacks.onToggleSound();
+    });
     this.musicBtn = create("button", "bo-icon-btn");
     this.musicBtn.textContent = "🎵";
     this.musicBtn.title = "Toggle Music (B)";
-    this.musicBtn.addEventListener("click", () => this.callbacks.onToggleMusic());
+    this.musicBtn.addEventListener("click", () => {
+      this.callbacks.onToggleMusic();
+    });
     const pauseBtn = create("button", "bo-icon-btn");
     pauseBtn.textContent = "⏸";
     pauseBtn.title = "Pause (Esc)";
-    pauseBtn.addEventListener("click", () => this.callbacks.onPause());
+    pauseBtn.addEventListener("click", () => {
+      this.callbacks.onPause();
+    });
     center.appendChild(this.soundBtn);
     center.appendChild(this.musicBtn);
     center.appendChild(pauseBtn);

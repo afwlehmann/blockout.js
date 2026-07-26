@@ -170,12 +170,12 @@ export class Menu implements UiElement {
 
   private pitControls(): HTMLElement {
     const wrap = create("div");
-    const dims: Array<{
+    const dims: {
       key: "width" | "depth" | "height";
       label: string;
       min: number;
       max: number;
-    }> = [
+    }[] = [
       { key: "width", label: "Width", min: 4, max: 7 },
       { key: "depth", label: "Depth", min: 4, max: 7 },
       { key: "height", label: "Height", min: 10, max: 18 },
@@ -226,7 +226,9 @@ export class Menu implements UiElement {
       const btn = create("button", "bo-btn");
       btn.textContent = labels[opt] ?? opt;
       if (opt === active) btn.classList.add("active");
-      btn.addEventListener("click", () => onSelect(opt));
+      btn.addEventListener("click", () => {
+        onSelect(opt);
+      });
       wrap.appendChild(btn);
     });
     return wrap;

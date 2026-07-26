@@ -1,7 +1,7 @@
 import { createScene, createLights, onResize } from "./render/scene.js";
 import { PitView } from "./render/pitView.js";
 import { SplitScreenLayout } from "./render/layout.js";
-import { PlayerEngine, type EngineState } from "./game/engine.js";
+import { PlayerEngine, type EngineEvent, type EngineState } from "./game/engine.js";
 import { Match, type MatchResult } from "./game/match.js";
 import { Rng } from "./game/rng.js";
 import type { MatchConfig, PlayerId } from "./game/types.js";
@@ -9,6 +9,8 @@ import { InputSource, loadInputSettings } from "./input/input.js";
 import { Menu } from "./ui/menu.js";
 import { Hud } from "./ui/hud.js";
 import { GameOverScreen } from "./ui/gameOver.js";
+import { AudioManager } from "./audio/manager.js";
+import type { SfxType } from "./audio/sfx.js";
 
 interface GameSession {
   readonly config: MatchConfig;
@@ -26,10 +28,9 @@ const { scene, renderer } = createScene(container);
 createLights(scene);
 const cleanupResize = onResize(renderer, container);
 const input = InputSource.create(loadInputSettings());
+const audio = new AudioManager();
 
 const PLAYERS: readonly PlayerId[] = [1, 2];
-let soundEnabled = true;
-let musicEnabled = true;
 let currentSession: GameSession | null = null;
 let menu: Menu | null = null;
 let hud: Hud | null = null;
@@ -40,11 +41,40 @@ let lastFrame = 0;
 const startMenu = (): void => {
   if (menu) return;
   cleanupSession();
+  audio.stopMusic();
   menu = new Menu();
   menu.onStart(({ config }) => {
     menu?.dispose();
     menu = null;
     startGame(config);
+  });
+};
+
+const sfxForEngineEvent = (ev: EngineEvent): { type: SfxType; intensity: number } | null => {
+  switch (ev.type) {
+    case "lock":
+      return { type: "lock", intensity: 0 };
+    case "clear": {
+      const layers = ev.clearedLayers?.length ?? 0;
+      const types: Record<number, SfxType> = { 1: "clear1", 2: "clear2", 3: "clear3", 4: "clear4" };
+      const type = types[layers] ?? "clear4";
+      return { type, intensity: layers };
+    }
+    case "levelUp":
+      return { type: "levelUp", intensity: 0 };
+    case "gameOver":
+      return { type: "gameOver", intensity: 0 };
+    case "blockOut":
+      return { type: "gameOver", intensity: 0 };
+    default:
+      return null;
+  }
+};
+
+const wireEngineEvents = (engine: PlayerEngine): void => {
+  engine.on((ev) => {
+    const sfx = sfxForEngineEvent(ev);
+    if (sfx) audio.playSfx(sfx.type, sfx.intensity);
   });
 };
 
@@ -63,6 +93,15 @@ const startGame = (config: MatchConfig): void => {
     const m = match;
     PLAYERS.forEach((p) => {
       engines[p] = m.engines[p];
+    });
+    PLAYERS.forEach((p) => {
+      const e = engines[p];
+      if (e) wireEngineEvents(e);
+    });
+    m.on((ev) => {
+      if (ev.type === "attack") {
+        audio.playSfx("attack", ev.layers);
+      }
     });
     const views = PLAYERS.map((p, i) => {
       const view = new PitView(config.pit, i * pitSpacing);
@@ -101,6 +140,7 @@ const startGame = (config: MatchConfig): void => {
   } else {
     const engine = new PlayerEngine(config, new Rng(Math.floor(Math.random() * 1000000)));
     engines[1] = engine;
+    wireEngineEvents(engine);
     const view = new PitView(config.pit, 0);
     scene.add(view.group);
     pitViews.push(view);
@@ -134,11 +174,11 @@ const startGame = (config: MatchConfig): void => {
         v.toggleCamera();
       });
     } else if (action.kind === "toggleSound") {
-      soundEnabled = !soundEnabled;
-      hud?.setSoundEnabled(soundEnabled);
+      const enabled = audio.toggleSfx();
+      hud?.setSoundEnabled(enabled);
     } else if (action.kind === "toggleMusic") {
-      musicEnabled = !musicEnabled;
-      hud?.setMusicEnabled(musicEnabled);
+      const enabled = audio.toggleMusic();
+      hud?.setMusicEnabled(enabled);
     }
   });
 
@@ -155,12 +195,12 @@ const startGame = (config: MatchConfig): void => {
 
   hud = new Hud(players, {
     onToggleSound: () => {
-      soundEnabled = !soundEnabled;
-      hud?.setSoundEnabled(soundEnabled);
+      const enabled = audio.toggleSfx();
+      hud?.setSoundEnabled(enabled);
     },
     onToggleMusic: () => {
-      musicEnabled = !musicEnabled;
-      hud?.setMusicEnabled(musicEnabled);
+      const enabled = audio.toggleMusic();
+      hud?.setMusicEnabled(enabled);
     },
     onPause: () => {
       PLAYERS.forEach((p) => {
@@ -169,8 +209,11 @@ const startGame = (config: MatchConfig): void => {
       });
     },
   });
-  hud.setSoundEnabled(soundEnabled);
-  hud.setMusicEnabled(musicEnabled);
+  hud.setSoundEnabled(!audio.isSfxMuted());
+  hud.setMusicEnabled(!audio.isMusicMuted());
+
+  void audio.resume();
+  audio.startMusic();
 
   lastFrame = performance.now();
   rafId = requestAnimationFrame(loop);
