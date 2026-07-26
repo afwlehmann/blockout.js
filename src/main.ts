@@ -1,4 +1,5 @@
 import { createScene, createLights, onResize } from "./render/scene.js";
+import * as THREE from "three";
 import { PitView } from "./render/pitView.js";
 import { SplitScreenLayout } from "./render/layout.js";
 import { PlayerEngine, type EngineEvent, type EngineState } from "./game/engine.js";
@@ -22,7 +23,7 @@ interface PauseOverlay extends UiElement {
 
 const createPauseOverlay = (): PauseOverlay => {
   const el = create("div", "bo-overlay");
-  el.style.background = "rgba(10, 10, 15, 0.7)";
+  el.style.background = "rgba(1, 1, 10, 0.7)";
   const panel = create("div", "bo-panel");
   panel.style.textAlign = "center";
   panel.style.padding = "2rem 3rem";
@@ -57,7 +58,7 @@ interface GameSession {
 const container = document.getElementById("app");
 if (!container) throw new Error("#app container not found");
 
-const { scene, renderer } = createScene(container);
+const { scene, renderer, spaceEnv } = createScene(container);
 createLights(scene);
 const cleanupResize = onResize(renderer, container);
 const input = InputSource.create(loadInputSettings());
@@ -72,10 +73,46 @@ let pauseOverlay: PauseOverlay | null = null;
 let rafId: number | null = null;
 let lastFrame = 0;
 
+const ambientCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 300);
+ambientCamera.position.set(0, 0, 0);
+ambientCamera.lookAt(0, 0, -1);
+
+let ambientActive = false;
+let ambientLast = 0;
+
+const ambientLoop = (now: number): void => {
+  const dt = now - ambientLast;
+  ambientLast = now;
+  spaceEnv.update(dt);
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  if (ambientCamera.aspect !== w / h) {
+    ambientCamera.aspect = w / h;
+    ambientCamera.updateProjectionMatrix();
+  }
+  ambientCamera.rotation.y += (dt / 1000) * 0.01;
+  renderer.setViewport(0, 0, w, h);
+  renderer.setScissorTest(false);
+  renderer.render(scene, ambientCamera);
+  if (ambientActive) requestAnimationFrame(ambientLoop);
+};
+
+const startAmbient = (): void => {
+  if (ambientActive) return;
+  ambientActive = true;
+  ambientLast = performance.now();
+  requestAnimationFrame(ambientLoop);
+};
+
+const stopAmbient = (): void => {
+  ambientActive = false;
+};
+
 const startMenu = (): void => {
   if (menu) return;
   cleanupSession();
   audio.stopMusic();
+  startAmbient();
   menu = new Menu();
   menu.onStart(({ config, crazyMode }) => {
     menu?.dispose();
@@ -130,6 +167,7 @@ const wireEngineEvents = (engine: PlayerEngine, pitView: PitView): void => {
 };
 
 const startGame = (config: MatchConfig, crazyMode: boolean): void => {
+  stopAmbient();
   const players: readonly PlayerId[] = config.mode === "2p" ? PLAYERS : [1];
   const pitGap = 2;
   const pitSpacing = config.pit.width + pitGap;
@@ -308,6 +346,8 @@ const loop = (now: number): void => {
     if (engine && !engine.state().paused) engine.update(dt);
   });
 
+  spaceEnv.update(dt);
+
   session.pitViews.forEach((v, i) => {
     const engine = session.engines[PLAYERS[i] ?? 1];
     if (engine) v.update(engine);
@@ -330,6 +370,7 @@ const loop = (now: number): void => {
     rafId = requestAnimationFrame(loop);
   } else {
     showGameOver(session);
+    startAmbient();
   }
 };
 
