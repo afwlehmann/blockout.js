@@ -2,97 +2,264 @@ import type { TrackData, NoteEvent, NoiseEvent, FilterEvent } from "./scheduler.
 import type { VoiceParams } from "./sid.js";
 import { SidSynth } from "./sid.js";
 
-const BPM = 130;
+const BPM = 100;
 const BEAT = 60 / BPM;
 const BAR = BEAT * 4;
-const TOTAL_BARS = 96;
+const SIXTEENTH = BEAT / 4;
+const EIGHTH = BEAT / 2;
+const TOTAL_BARS = 64;
 const LOOP_LENGTH = BAR * TOTAL_BARS;
 
-const ARP = (freq: number): VoiceParams => ({
-  waveform: "square",
-  frequency: freq,
-  attack: 0.002,
-  decay: 0.03,
-  sustain: 0.2,
-  release: 0.02,
-  volume: 0.07,
-});
-
-const BASS = (freq: number): VoiceParams => ({
+const RIFF = (freq: number): VoiceParams => ({
   waveform: "sawtooth",
   frequency: freq,
-  attack: 0.003,
-  decay: 0.06,
-  sustain: 0.4,
+  attack: 0.002,
+  decay: 0.04,
+  sustain: 0.15,
   release: 0.03,
-  volume: 0.13,
-  detune: 4,
+  volume: 0.18,
+  detune: 7,
+});
+
+const SUB_BASS = (freq: number): VoiceParams => ({
+  waveform: "sine",
+  frequency: freq,
+  attack: 0.02,
+  decay: 0.1,
+  sustain: 0.85,
+  release: 0.15,
+  volume: 0.26,
 });
 
 const LEAD = (freq: number): VoiceParams => ({
   waveform: "square",
   frequency: freq,
-  attack: 0.008,
-  decay: 0.06,
-  sustain: 0.5,
-  release: 0.08,
-  volume: 0.09,
-  detune: 6,
+  attack: 0.003,
+  decay: 0.04,
+  sustain: 0.3,
+  release: 0.06,
+  volume: 0.1,
+  detune: 10,
 });
 
 const KICK = (): VoiceParams => ({
   waveform: "sine",
-  frequency: 55,
+  frequency: 45,
   attack: 0.001,
-  decay: 0.08,
+  decay: 0.06,
   sustain: 0,
   release: 0.02,
-  volume: 0.25,
+  volume: 0.3,
 });
 
-const A2 = SidSynth.note(45);
+const SNARE = (): VoiceParams => ({
+  waveform: "triangle",
+  frequency: 200,
+  attack: 0.001,
+  decay: 0.04,
+  sustain: 0,
+  release: 0.03,
+  volume: 0.15,
+});
+
+const TOM_HIGH = (): VoiceParams => ({
+  waveform: "sine",
+  frequency: 220,
+  attack: 0.002,
+  decay: 0.1,
+  sustain: 0,
+  release: 0.06,
+  volume: 0.22,
+});
+
+const TOM_MID = (): VoiceParams => ({
+  waveform: "sine",
+  frequency: 150,
+  attack: 0.002,
+  decay: 0.12,
+  sustain: 0,
+  release: 0.08,
+  volume: 0.22,
+});
+
+const TOM_LOW = (): VoiceParams => ({
+  waveform: "sine",
+  frequency: 90,
+  attack: 0.002,
+  decay: 0.16,
+  sustain: 0,
+  release: 0.1,
+  volume: 0.24,
+});
+
+const E1 = SidSynth.note(28);
+const F1 = SidSynth.note(29);
+const Fs1 = SidSynth.note(30);
+const B1 = SidSynth.note(35);
+const C2 = SidSynth.note(36);
+const Cs2 = SidSynth.note(37);
+const D2 = SidSynth.note(38);
+const Ds2 = SidSynth.note(39);
 const E2 = SidSynth.note(40);
 const F2 = SidSynth.note(41);
-const C2 = SidSynth.note(36);
+const Fs2 = SidSynth.note(42);
 const G2 = SidSynth.note(43);
-const D2 = SidSynth.note(38);
+const Gs2 = SidSynth.note(44);
+const A2 = SidSynth.note(45);
+const B2 = SidSynth.note(47);
+const C3 = SidSynth.note(48);
+const D3 = SidSynth.note(50);
+const E3 = SidSynth.note(52);
+const F3 = SidSynth.note(53);
+const G3 = SidSynth.note(55);
 const A3 = SidSynth.note(57);
-const C4 = SidSynth.note(60);
+const B3 = SidSynth.note(59);
 const D4 = SidSynth.note(62);
 const E4 = SidSynth.note(64);
 const F4 = SidSynth.note(65);
 const G4 = SidSynth.note(67);
-const Bb4 = SidSynth.note(70);
-const A4 = SidSynth.note(69);
-const C5 = SidSynth.note(72);
-const D5 = SidSynth.note(74);
-const E5 = SidSynth.note(76);
-const F5 = SidSynth.note(77);
-const G5 = SidSynth.note(79);
-const Bb3 = SidSynth.note(58);
-const Bb5 = SidSynth.note(82);
 
-const BASS_CYCLE: readonly (readonly number[])[] = [
-  [A2, A2, E2, A2, A2, A2, E2, A2],
-  [F2, F2, C2, F2, G2, G2, D2, G2],
+const RIFF_A: readonly number[] = [E2, E2, E2, E2, E2, E2, Fs2, G2, E2, E2, E2, E2, B1, B1, B1, B1];
+const RIFF_B: readonly number[] = [
+  C2,
+  C2,
+  C2,
+  Cs2,
+  D2,
+  D2,
+  Ds2,
+  E2,
+  F2,
+  F2,
+  F2,
+  F2,
+  Fs2,
+  G2,
+  Gs2,
+  A2,
 ];
-const BASS_CYCLE_BRIDGE: readonly (readonly number[])[] = [
-  [A2, E2, A2, E2, A2, E2, A2, E2],
-  [F2, C2, F2, C2, G2, D2, G2, D2],
+const RIFF_C: readonly number[] = [
+  B1,
+  B1,
+  B1,
+  B1,
+  C2,
+  Cs2,
+  D2,
+  Ds2,
+  E2,
+  E2,
+  F2,
+  Fs2,
+  G2,
+  G2,
+  G2,
+  G2,
+];
+const RIFF_D: readonly number[] = [
+  E2,
+  E2,
+  G2,
+  E2,
+  E2,
+  Ds2,
+  E2,
+  F2,
+  Fs2,
+  Fs2,
+  Fs2,
+  Fs2,
+  G2,
+  A2,
+  B2,
+  C3,
 ];
 
-const ARP_AM: readonly number[] = [A3, C4, E4, A4, E4, C4, A3, E4];
-const ARP_F: readonly number[] = [F4, A4, C5, F5, C5, A4, F4, C5];
-const ARP_G: readonly number[] = [G4, Bb4, D5, G5, D5, Bb4, G4, D5];
-const ARP_E: readonly number[] = [E4, G4, Bb3, E5, Bb3, G4, E4, Bb3];
-const ARP_CYCLE: readonly (readonly number[])[] = [ARP_AM, ARP_F, ARP_G, ARP_E];
+const RIFF_PATTERNS: readonly (readonly number[])[] = [RIFF_A, RIFF_B, RIFF_C, RIFF_D];
 
-const LEAD_MELODY: readonly (readonly (number | null)[])[] = [
-  [A4, null, C5, D5, E5, null, D5, C5, Bb4, null, A4, G4, F4, null, E4, D4],
-  [C5, null, Bb4, A4, G4, null, A4, Bb4, A4, null, null, null, E5, null, D5, C5],
-  [A4, null, E5, F5, E5, null, D5, C5, Bb4, null, A4, G4, F4, null, E4, null],
-  [D5, null, C5, Bb4, A4, null, G4, A4, Bb4, null, C5, D5, E5, null, null, null],
+const SUB_ROOTS: readonly (readonly number[])[] = [
+  [E1, E1, E1, E1],
+  [F1, F1, F1, F1],
+  [B1, B1, B1, B1],
+  [E1, E1, E1, E1],
 ];
+
+const LEAD_PHRASES: readonly (readonly (number | null)[])[] = [
+  [E4, null, D4, null, C3, null, B2, null, A2, null, G2, null, Fs2, null, E2, null],
+  [F4, E4, D4, C3, B2, A2, G2, Fs2, E2, null, Fs2, G2, A2, null, B2, null],
+  [G4, F4, E4, D4, C3, B2, A2, G2, Fs2, null, E2, null, D2, null, C2, null],
+  [E4, D4, C3, B2, A2, G2, Fs2, E2, B2, D3, E3, F3, G3, A3, B3, D4],
+];
+
+const getDrumStyle = (bar: number, section: number): "none" | "half" | "full" | "blast" => {
+  if (section === 0) {
+    if (bar < 4) return "none";
+    if (bar < 8) return "half";
+    return "full";
+  }
+  if (section === 1) {
+    return bar % 4 === 3 ? "half" : "none";
+  }
+  if (section === 2) {
+    return bar % 4 === 3 ? "blast" : "full";
+  }
+  if (bar < 56) return "none";
+  if (bar < 60) return "half";
+  if (bar < 62) return "none";
+  return "blast";
+};
+
+const addKickPattern = (notes: NoteEvent[], barTime: number, style: string): void => {
+  if (style === "half") {
+    [0, 2].forEach((b) => {
+      notes.push({ time: barTime + b * BEAT, voice: 3, params: KICK(), duration: 0.12 });
+    });
+    notes.push({ time: barTime + BEAT, voice: 3, params: SNARE(), duration: 0.1 });
+    notes.push({ time: barTime + BEAT * 3, voice: 3, params: SNARE(), duration: 0.1 });
+  } else if (style === "full") {
+    [0, 1, 2, 3].forEach((b) => {
+      notes.push({ time: barTime + b * BEAT, voice: 3, params: KICK(), duration: 0.12 });
+      notes.push({
+        time: barTime + b * BEAT + SIXTEENTH * 3,
+        voice: 3,
+        params: KICK(),
+        duration: 0.08,
+      });
+    });
+    notes.push({ time: barTime + BEAT, voice: 3, params: SNARE(), duration: 0.1 });
+    notes.push({ time: barTime + BEAT * 3, voice: 3, params: SNARE(), duration: 0.1 });
+  } else if (style === "blast") {
+    for (let i = 0; i < 16; i++) {
+      notes.push({ time: barTime + i * SIXTEENTH, voice: 3, params: KICK(), duration: 0.06 });
+      if (i % 2 === 1) {
+        notes.push({ time: barTime + i * SIXTEENTH, voice: 3, params: SNARE(), duration: 0.05 });
+      }
+    }
+  }
+};
+
+const addTomFill = (notes: NoteEvent[], barTime: number, bar: number): void => {
+  const fillLen = Math.min(4, bar - 55);
+  const toms: (() => VoiceParams)[] = [TOM_LOW, TOM_MID, TOM_HIGH];
+  for (let i = 0; i < fillLen * 6; i++) {
+    const tomFn = toms[i % 3] ?? TOM_LOW;
+    notes.push({
+      time: barTime + (i * SIXTEENTH * 2) / Math.max(1, fillLen),
+      voice: 3,
+      params: tomFn(),
+      duration: 0.15,
+    });
+  }
+};
+
+const addDropImpact = (notes: NoteEvent[], barTime: number): void => {
+  notes.push({ time: barTime, voice: 3, params: KICK(), duration: 0.8 });
+  notes.push({ time: barTime, voice: 1, params: SUB_BASS(E1), duration: BEAT * 4 });
+  notes.push({ time: barTime, voice: 2, params: RIFF(E2), duration: BEAT * 4 });
+  notes.push({ time: barTime + BEAT * 2, voice: 3, params: KICK(), duration: 0.3 });
+  notes.push({ time: barTime + BEAT * 2.5, voice: 3, params: KICK(), duration: 0.2 });
+  notes.push({ time: barTime + BEAT * 3, voice: 3, params: KICK(), duration: 0.2 });
+};
 
 const buildNotes = (): NoteEvent[] => {
   const notes: NoteEvent[] = [];
@@ -100,99 +267,130 @@ const buildNotes = (): NoteEvent[] => {
 
   bars.forEach((bar) => {
     const barTime = bar * BAR;
-    const section = Math.floor(bar / 24);
-    const isBridge = section === 1;
+    const section = Math.floor(bar / 16);
     const isBreakdown = section === 3;
-    const leadActive = section === 0 || section === 2 || (isBreakdown && bar >= 88);
+    const isIntro = section === 0 && bar < 4;
+    const leadActive = section === 2 || (isBreakdown && bar >= 62);
 
-    const bassPattern = isBridge ? BASS_CYCLE_BRIDGE : BASS_CYCLE;
-    const bassRow = bassPattern[bar % 2] ?? BASS_CYCLE[0] ?? [A2, A2, E2, A2, A2, A2, E2, A2];
-
-    if (!isBreakdown || bar < 84) {
-      for (let i = 0; i < 8; i++) {
-        const freq = bassRow[i];
+    if (!isBreakdown || bar >= 60) {
+      const subRow = SUB_ROOTS[bar % SUB_ROOTS.length] ?? SUB_ROOTS[0] ?? [E1];
+      for (let i = 0; i < subRow.length; i++) {
+        const freq = subRow[i];
         if (freq) {
           notes.push({
-            time: barTime + i * (BEAT / 2),
+            time: barTime + i * BEAT,
             voice: 1,
-            params: BASS(freq),
-            duration: BEAT * 0.45,
+            params: SUB_BASS(freq),
+            duration: BEAT * 0.98,
           });
         }
       }
     }
 
-    if (!isBreakdown || bar >= 84) {
-      const arpPattern = ARP_CYCLE[bar % 4] ?? ARP_AM;
-      for (let i = 0; i < 16; i++) {
-        const freq = arpPattern[i % arpPattern.length];
+    if (!isIntro && (!isBreakdown || bar >= 60)) {
+      const riffPattern = RIFF_PATTERNS[bar % RIFF_PATTERNS.length] ?? RIFF_A;
+      for (let i = 0; i < riffPattern.length; i++) {
+        const freq = riffPattern[i];
         if (freq) {
           notes.push({
-            time: barTime + i * (BEAT / 4),
-            voice: 0,
-            params: ARP(freq),
-            duration: BEAT * 0.22,
+            time: barTime + i * EIGHTH,
+            voice: 2,
+            params: RIFF(freq),
+            duration: EIGHTH * 0.9,
           });
         }
       }
     }
 
     if (leadActive) {
-      const leadIdx = bar % 4;
-      const melody = LEAD_MELODY[leadIdx] ?? LEAD_MELODY[0] ?? [A4];
-      for (let i = 0; i < 16; i++) {
-        const note = melody[i];
+      const phraseIdx = bar % LEAD_PHRASES.length;
+      const phrase = LEAD_PHRASES[phraseIdx] ?? LEAD_PHRASES[0] ?? [E4];
+      for (let i = 0; i < phrase.length; i++) {
+        const note = phrase[i];
         if (note !== null && note !== undefined) {
           notes.push({
-            time: barTime + i * (BEAT / 4),
-            voice: 2,
+            time: barTime + i * SIXTEENTH,
+            voice: 0,
             params: LEAD(note),
-            duration: BEAT * 0.9,
+            duration: SIXTEENTH * 1.8,
           });
         }
       }
     }
 
-    notes.push({
-      time: barTime,
-      voice: 3,
-      params: KICK(),
-      duration: 0.15,
-    });
-    notes.push({
-      time: barTime + BEAT * 2,
-      voice: 3,
-      params: KICK(),
-      duration: 0.15,
-    });
+    const drumStyle = getDrumStyle(bar, section);
+    if (drumStyle !== "none") {
+      addKickPattern(notes, barTime, drumStyle);
+    }
+
+    if (isBreakdown && bar >= 56) {
+      addTomFill(notes, barTime, bar);
+    }
+    if (isBreakdown && bar === 59) {
+      addDropImpact(notes, barTime);
+    }
   });
 
   return notes;
 };
 
+const HIGHPASS: BiquadFilterType = "highpass";
+
 const buildNoise = (): NoiseEvent[] => {
   const events: NoiseEvent[] = [];
-  const totalEighth = TOTAL_BARS * 8;
+  const totalSixteenths = TOTAL_BARS * 16;
 
-  for (let i = 0; i < totalEighth; i++) {
-    const time = i * (BEAT / 2);
-    const beatInBar = i % 8;
+  for (let i = 0; i < totalSixteenths; i++) {
+    const time = i * SIXTEENTH;
+    const beatInBar = i % 16;
+    const bar = Math.floor(i / 16);
+    const section = Math.floor(bar / 16);
+    const isBreakdown = section === 3;
+    const isIntro = section === 0 && bar < 4;
 
-    if (beatInBar === 1 || beatInBar === 5) {
+    if (isIntro) continue;
+    if (isBreakdown && bar < 56) continue;
+
+    if (beatInBar === 4 || beatInBar === 12) {
+      const snareVol = isBreakdown && bar >= 60 ? 0.18 : 0.15;
       events.push({
         time: time,
-        filterFreq: 3000,
-        volume: 0.12,
-        duration: 0.12,
+        filterFreq: 2500,
+        volume: snareVol,
+        duration: 0.1,
+        filterType: HIGHPASS,
       });
     }
 
-    events.push({
-      time: time,
-      filterFreq: 8000,
-      volume: 0.03,
-      duration: 0.04,
-    });
+    if (bar % 4 === 0 && beatInBar === 0 && section !== 1) {
+      const crashVol = isBreakdown && bar === 60 ? 0.24 : 0.1;
+      events.push({
+        time: time,
+        filterFreq: 10000,
+        volume: crashVol,
+        duration: 0.6,
+      });
+    }
+
+    const drumStyle = getDrumStyle(bar, section);
+    if (drumStyle === "blast" && beatInBar % 2 === 1) {
+      events.push({
+        time: time,
+        filterFreq: 2200,
+        volume: 0.12,
+        duration: 0.06,
+        filterType: HIGHPASS,
+      });
+    }
+
+    if (drumStyle !== "none" && beatInBar % 4 === 0) {
+      events.push({
+        time: time,
+        filterFreq: 7000,
+        volume: 0.03,
+        duration: 0.03,
+      });
+    }
   }
 
   return events;
@@ -201,49 +399,51 @@ const buildNoise = (): NoiseEvent[] => {
 const buildFilter = (): FilterEvent[] => {
   const events: FilterEvent[] = [];
 
-  events.push({
-    time: 0,
-    frequency: 8000,
-    resonance: 2,
-  });
+  events.push({ time: 0, frequency: 7000, resonance: 3 });
 
   events.push({
-    time: 24 * BAR,
-    frequency: 8000,
+    time: 16 * BAR,
+    frequency: 7000,
     resonance: 8,
-    sweepTo: 2000,
-    sweepDuration: 2 * BAR,
-  });
-
-  events.push({
-    time: 36 * BAR,
-    frequency: 2000,
-    resonance: 8,
-    sweepTo: 8000,
-    sweepDuration: 2 * BAR,
-  });
-
-  events.push({
-    time: 48 * BAR,
-    frequency: 8000,
-    resonance: 2,
-  });
-
-  events.push({
-    time: 72 * BAR,
-    frequency: 8000,
-    resonance: 10,
     sweepTo: 1500,
     sweepDuration: 2 * BAR,
   });
 
   events.push({
-    time: 84 * BAR,
+    time: 28 * BAR,
     frequency: 1500,
-    resonance: 10,
+    resonance: 8,
     sweepTo: 8000,
+    sweepDuration: 2 * BAR,
+  });
+
+  events.push({ time: 32 * BAR, frequency: 8000, resonance: 2 });
+
+  events.push({
+    time: 48 * BAR,
+    frequency: 8000,
+    resonance: 10,
+    sweepTo: 1000,
+    sweepDuration: 2 * BAR,
+  });
+
+  events.push({
+    time: 56 * BAR,
+    frequency: 8000,
+    resonance: 14,
+    sweepTo: 100,
     sweepDuration: 4 * BAR,
   });
+
+  events.push({
+    time: 60 * BAR,
+    frequency: 100,
+    resonance: 14,
+    sweepTo: 9000,
+    sweepDuration: 1 * BAR,
+  });
+
+  events.push({ time: 61 * BAR, frequency: 9000, resonance: 2 });
 
   return events;
 };
@@ -251,8 +451,6 @@ const buildFilter = (): FilterEvent[] => {
 const notes = buildNotes();
 const noise = buildNoise();
 const filter = buildFilter();
-
-void Bb5;
 
 export const TRACK: TrackData = {
   bpm: BPM,
