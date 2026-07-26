@@ -94,7 +94,8 @@ src/
 | Rotate Z (spin) | E (CCW) / D (CW)  |
 | Hard drop       | Space             |
 | Soft drop       | Left Shift        |
-| Pause           | Esc               |
+| Pause           | P                 |
+| Exit to Menu    | Esc (confirms)    |
 | Camera toggle   | C                 |
 | Toggle SFX      | O                 |
 | Toggle Music    | B                 |
@@ -102,15 +103,17 @@ src/
 
 ### Player 2 (arrow keys + right-hand cluster)
 
-| Action         | Keys             |
-| -------------- | ---------------- |
-| Move           | Arrow keys       |
-| Rotate X       | U (CW) / O (CCW) |
-| Rotate Y       | 7 (CW) / 9 (CCW) |
-| Rotate Z       | M (CW) / . (CCW) |
-| Hard drop      | Right Shift      |
-| Soft drop      | Right Ctrl       |
-| Pause / Camera | Esc / /          |
+| Action       | Keys             |
+| ------------ | ---------------- |
+| Move         | Arrow keys       |
+| Rotate X     | U (CW) / O (CCW) |
+| Rotate Y     | 7 (CW) / 9 (CCW) |
+| Rotate Z     | M (CW) / . (CCW) |
+| Hard drop    | Right Shift      |
+| Soft drop    | Right Ctrl       |
+| Pause        | P                |
+| Exit to Menu | Esc (confirms)   |
+| Camera       | /                |
 
 Keys are remappable via the in-menu Controls panel (P1/P2 tabs).
 

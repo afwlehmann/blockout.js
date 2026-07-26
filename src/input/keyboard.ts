@@ -6,7 +6,8 @@ export type GameAction =
   | { readonly kind: "cameraToggle" }
   | { readonly kind: "toggleSound" }
   | { readonly kind: "toggleMusic" }
-  | { readonly kind: "toggleGhost" };
+  | { readonly kind: "toggleGhost" }
+  | { readonly kind: "exitToMenu" };
 
 export type ActionHandler = (action: GameAction) => void;
 
@@ -24,6 +25,7 @@ export interface KeyBinding {
   readonly hardDrop: readonly string[];
   readonly softDrop: readonly string[];
   readonly pause: readonly string[];
+  readonly exitToMenu: readonly string[];
   readonly cameraToggle: readonly string[];
   readonly toggleSound: readonly string[];
   readonly toggleMusic: readonly string[];
@@ -43,7 +45,8 @@ export const PLAYER1_LAYOUT: KeyBinding = {
   rotateZPos: ["KeyD"],
   hardDrop: ["Space"],
   softDrop: ["ShiftLeft"],
-  pause: ["Escape"],
+  pause: ["KeyP"],
+  exitToMenu: ["Escape"],
   cameraToggle: ["KeyC"],
   toggleSound: ["KeyO"],
   toggleMusic: ["KeyB"],
@@ -63,7 +66,8 @@ export const PLAYER2_LAYOUT: KeyBinding = {
   rotateZNeg: ["Period"],
   hardDrop: ["ShiftRight"],
   softDrop: ["ControlRight"],
-  pause: ["Escape"],
+  pause: ["KeyP"],
+  exitToMenu: ["Escape"],
   cameraToggle: ["Slash"],
   toggleSound: ["KeyN"],
   toggleMusic: ["KeyB"],
@@ -96,6 +100,7 @@ const lookup = (binding: KeyBinding, code: string): GameAction | null => {
   if (binding.hardDrop.includes(code)) return { kind: "hardDrop" };
   if (binding.softDrop.includes(code)) return { kind: "softDrop" };
   if (binding.pause.includes(code)) return { kind: "pause" };
+  if (binding.exitToMenu.includes(code)) return { kind: "exitToMenu" };
   if (binding.cameraToggle.includes(code)) return { kind: "cameraToggle" };
   if (binding.toggleSound.includes(code)) return { kind: "toggleSound" };
   if (binding.toggleMusic.includes(code)) return { kind: "toggleMusic" };
@@ -204,7 +209,8 @@ export class KeyboardInput {
       action.kind === "toggleSound" ||
       action.kind === "toggleMusic" ||
       action.kind === "toggleGhost" ||
-      action.kind === "pause"
+      action.kind === "pause" ||
+      action.kind === "exitToMenu"
     );
   }
 

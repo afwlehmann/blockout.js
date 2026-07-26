@@ -16,6 +16,7 @@ const ACTION_LABELS: readonly { key: keyof KeyBinding; label: string }[] = [
   { key: "hardDrop", label: "Hard Drop" },
   { key: "softDrop", label: "Soft Drop" },
   { key: "pause", label: "Pause" },
+  { key: "exitToMenu", label: "Exit to Menu" },
   { key: "cameraToggle", label: "Camera" },
   { key: "toggleSound", label: "Toggle SFX" },
   { key: "toggleMusic", label: "Toggle Music" },
@@ -67,6 +68,10 @@ export class KeyRemap implements UiElement {
 
   dispose(): void {
     this.stopListening();
+  }
+
+  get isListening(): boolean {
+    return this.listeningFor !== null;
   }
 
   private render(): void {

@@ -121,7 +121,7 @@ export class Hud implements UiElement {
     });
     const pauseBtn = create("button", "bo-icon-btn");
     pauseBtn.textContent = "⏸";
-    pauseBtn.title = "Pause (Esc)";
+    pauseBtn.title = "Pause (P)";
     pauseBtn.addEventListener("click", () => {
       this.callbacks.onPause();
     });
