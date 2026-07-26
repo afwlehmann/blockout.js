@@ -49,7 +49,7 @@ export const PLAYER1_LAYOUT: KeyBinding = {
   exitToMenu: ["Escape"],
   cameraToggle: ["KeyC"],
   toggleSound: ["KeyO"],
-  toggleMusic: ["KeyB"],
+  toggleMusic: ["KeyM"],
   toggleGhost: ["KeyG"],
 };
 
@@ -58,19 +58,19 @@ export const PLAYER2_LAYOUT: KeyBinding = {
   moveRight: ["ArrowRight"],
   moveForward: ["ArrowUp"],
   moveBack: ["ArrowDown"],
-  rotateXPos: ["KeyU"],
-  rotateXNeg: ["KeyO"],
-  rotateYPos: ["Digit7"],
-  rotateYNeg: ["Digit9"],
-  rotateZPos: ["KeyM"],
-  rotateZNeg: ["Period"],
-  hardDrop: ["ShiftRight"],
-  softDrop: ["ControlRight"],
+  rotateXPos: ["Numpad4"],
+  rotateXNeg: ["Numpad7"],
+  rotateYPos: ["Numpad5"],
+  rotateYNeg: ["Numpad8"],
+  rotateZPos: ["Numpad6"],
+  rotateZNeg: ["Numpad9"],
+  hardDrop: ["Numpad0"],
+  softDrop: ["NumpadEnter"],
   pause: ["KeyP"],
   exitToMenu: ["Escape"],
-  cameraToggle: ["Slash"],
+  cameraToggle: ["NumpadDecimal"],
   toggleSound: ["KeyN"],
-  toggleMusic: ["KeyB"],
+  toggleMusic: ["KeyM"],
   toggleGhost: ["KeyH"],
 };
 
@@ -163,6 +163,8 @@ export class KeyboardInput {
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
+    const active = document.activeElement;
+    if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
     const code = e.code;
     if (this.heldKeys.has(code)) {
       e.preventDefault();

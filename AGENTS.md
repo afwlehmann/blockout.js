@@ -98,22 +98,22 @@ src/
 | Exit to Menu    | Esc (confirms)    |
 | Camera toggle   | C                 |
 | Toggle SFX      | O                 |
-| Toggle Music    | B                 |
+| Toggle Music    | M                 |
 | Toggle Ghost    | G                 |
 
-### Player 2 (arrow keys + right-hand cluster)
+### Player 2 (numpad)
 
-| Action       | Keys             |
-| ------------ | ---------------- |
-| Move         | Arrow keys       |
-| Rotate X     | U (CW) / O (CCW) |
-| Rotate Y     | 7 (CW) / 9 (CCW) |
-| Rotate Z     | M (CW) / . (CCW) |
-| Hard drop    | Right Shift      |
-| Soft drop    | Right Ctrl       |
-| Pause        | P                |
-| Exit to Menu | Esc (confirms)   |
-| Camera       | /                |
+| Action       | Keys           |
+| ------------ | -------------- |
+| Move         | Arrow keys     |
+| Rotate X     | Numpad 4 / 7   |
+| Rotate Y     | Numpad 5 / 8   |
+| Rotate Z     | Numpad 6 / 9   |
+| Hard drop    | Numpad 0       |
+| Soft drop    | Numpad Enter   |
+| Pause        | P              |
+| Exit to Menu | Esc (confirms) |
+| Camera       | Numpad .       |
 
 Keys are remappable via the in-menu Controls panel (P1/P2 tabs).
 

@@ -2,7 +2,7 @@ import type { PlayerId } from "../game/types.js";
 import type { KeyBinding } from "../input/keyboard.js";
 import { create, type UiElement } from "./dom.js";
 
-const ACTION_LABELS: readonly { key: keyof KeyBinding; label: string }[] = [
+const PLAYER_ACTIONS: readonly { key: keyof KeyBinding; label: string }[] = [
   { key: "moveLeft", label: "Move Left" },
   { key: "moveRight", label: "Move Right" },
   { key: "moveForward", label: "Move Forward" },
@@ -15,6 +15,9 @@ const ACTION_LABELS: readonly { key: keyof KeyBinding; label: string }[] = [
   { key: "rotateZNeg", label: "Rotate Z-" },
   { key: "hardDrop", label: "Hard Drop" },
   { key: "softDrop", label: "Soft Drop" },
+];
+
+const GLOBAL_ACTIONS: readonly { key: keyof KeyBinding; label: string }[] = [
   { key: "pause", label: "Pause" },
   { key: "exitToMenu", label: "Exit to Menu" },
   { key: "cameraToggle", label: "Camera" },
@@ -23,10 +26,22 @@ const ACTION_LABELS: readonly { key: keyof KeyBinding; label: string }[] = [
   { key: "toggleGhost", label: "Toggle Ghost" },
 ];
 
+export { GLOBAL_ACTIONS };
+
 const codeToLabel = (code: string): string => {
   if (code.startsWith("Key")) return code.slice(3);
   if (code.startsWith("Digit")) return code.slice(5);
   if (code.startsWith("Arrow")) return code.slice(5);
+  if (code.startsWith("Numpad")) {
+    const sub = code.slice(6);
+    if (sub === "Add") return "Num+";
+    if (sub === "Subtract") return "Num-";
+    if (sub === "Multiply") return "Num*";
+    if (sub === "Divide") return "Num/";
+    if (sub === "Decimal") return "Num.";
+    if (sub === "Enter") return "NumEnter";
+    return `Num${sub}`;
+  }
   if (code === "ShiftLeft") return "L-Shift";
   if (code === "ShiftRight") return "R-Shift";
   if (code === "ControlLeft") return "L-Ctrl";
@@ -41,6 +56,8 @@ const codeToLabel = (code: string): string => {
 const bindingToLabel = (codes: readonly string[]): string => {
   return codes.map(codeToLabel).join(", ");
 };
+
+export { codeToLabel, bindingToLabel };
 
 export class KeyRemap implements UiElement {
   readonly el: HTMLElement;
@@ -81,7 +98,7 @@ export class KeyRemap implements UiElement {
     this.el.appendChild(title);
 
     const grid = create("div", "bo-remap-grid");
-    ACTION_LABELS.forEach(({ key, label }) => {
+    PLAYER_ACTIONS.forEach(({ key, label }) => {
       const row = create("div", "bo-remap-row");
       const lbl = create("span", "bo-remap-label");
       lbl.textContent = label;
