@@ -32,6 +32,16 @@ export interface KeyBinding {
   readonly toggleGhost: readonly string[];
 }
 
+const ARROW_CODES = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
+
+export const stripArrows = (binding: KeyBinding): KeyBinding => ({
+  ...binding,
+  moveLeft: binding.moveLeft.filter((c) => !ARROW_CODES.includes(c)),
+  moveRight: binding.moveRight.filter((c) => !ARROW_CODES.includes(c)),
+  moveForward: binding.moveForward.filter((c) => !ARROW_CODES.includes(c)),
+  moveBack: binding.moveBack.filter((c) => !ARROW_CODES.includes(c)),
+});
+
 export const PLAYER1_LAYOUT: KeyBinding = {
   moveLeft: ["KeyH", "ArrowLeft"],
   moveRight: ["KeyL", "ArrowRight"],

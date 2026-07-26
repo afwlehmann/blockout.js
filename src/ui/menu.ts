@@ -139,8 +139,12 @@ export class Menu implements UiElement {
       panel.appendChild(this.section("Piece Set", this.setButtons()));
       panel.appendChild(this.section("Pit Size", this.pitControls()));
     }
-    panel.appendChild(this.section("Difficulty", this.difficultyButtons()));
-    panel.appendChild(this.section("Crazy Mode", this.crazyButtons()));
+    const diffCrazyRow = create("div", "bo-options");
+    diffCrazyRow.style.gap = "1.5rem";
+    diffCrazyRow.style.alignItems = "flex-start";
+    diffCrazyRow.appendChild(this.section("Difficulty", this.difficultyButtons()));
+    diffCrazyRow.appendChild(this.section("Crazy Mode", this.crazyButtons()));
+    panel.appendChild(diffCrazyRow);
     panel.appendChild(this.controlsSection());
     panel.appendChild(this.startButtonRow());
     this.el.appendChild(panel);
@@ -405,17 +409,19 @@ export class Menu implements UiElement {
     row.style.marginTop = "1.5rem";
     const startBtn = create("button", "bo-btn bo-btn-primary");
     startBtn.textContent = "Start Game";
+    startBtn.style.flex = "2 1 0";
     startBtn.addEventListener("click", () => {
       this.start();
     });
     const hsBtn = create("button", "bo-btn");
     hsBtn.textContent = "High Scores";
+    hsBtn.style.flex = "1 1 0";
     hsBtn.addEventListener("click", () => {
       this.showHighScores = true;
       this.render();
     });
-    row.appendChild(startBtn);
     row.appendChild(hsBtn);
+    row.appendChild(startBtn);
     return row;
   }
 

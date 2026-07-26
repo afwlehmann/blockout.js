@@ -10,7 +10,7 @@ import {
 } from "./keyboard.js";
 
 export type { GameAction, ActionHandler, KeyBinding, InputSettings };
-export { PLAYER1_LAYOUT, PLAYER2_LAYOUT } from "./keyboard.js";
+export { PLAYER1_LAYOUT, PLAYER2_LAYOUT, stripArrows } from "./keyboard.js";
 
 export class InputSource {
   private readonly keyboard: KeyboardInput;
@@ -31,6 +31,10 @@ export class InputSource {
 
   onGlobalAction(handler: ActionHandler): void {
     this.keyboard.onGlobalAction(handler);
+  }
+
+  setBinding(player: PlayerId, binding: KeyBinding): void {
+    this.keyboard.setBinding(player, binding);
   }
 
   rebind(player: PlayerId, binding: KeyBinding): void {

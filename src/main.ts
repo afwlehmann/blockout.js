@@ -6,7 +6,7 @@ import { PlayerEngine, type EngineEvent, type EngineState } from "./game/engine.
 import { Match, type MatchResult } from "./game/match.js";
 import { Rng } from "./game/rng.js";
 import type { MatchConfig, PlayerId } from "./game/types.js";
-import { InputSource, loadInputSettings } from "./input/input.js";
+import { InputSource, loadInputSettings, stripArrows } from "./input/input.js";
 import { create, mount, type UiElement } from "./ui/dom.js";
 import { Menu } from "./ui/menu.js";
 import { Hud } from "./ui/hud.js";
@@ -210,6 +210,14 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
       pitViews.forEach((v) => {
         v.dispose();
       });
+    });
+
+    const settings = loadInputSettings();
+    const p1: PlayerId = 1;
+    input.setBinding(p1, stripArrows(settings.bindings[p1]));
+
+    cleanups.push(() => {
+      input.setBinding(p1, settings.bindings[p1]);
     });
 
     players.forEach((p) => {
