@@ -169,7 +169,7 @@ export const createScene = (container: HTMLElement): SceneSetup => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.VSMShadowMap;
   renderer.setClearColor(0x01010a, 1);
 
   const scene = new THREE.Scene();
@@ -233,6 +233,7 @@ export const createLights = (scene: THREE.Scene): Lights => {
   key.shadow.camera.bottom = -15;
   key.shadow.bias = -0.0005;
   key.shadow.normalBias = 0.02;
+  key.shadow.radius = 4;
   scene.add(key);
   scene.add(key.target);
 

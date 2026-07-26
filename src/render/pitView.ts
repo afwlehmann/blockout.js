@@ -25,6 +25,11 @@ interface SlideAnim {
   postGrid: readonly number[];
 }
 
+interface CrazyWaypoint {
+  readonly posOffset: THREE.Vector3;
+  readonly quat: THREE.Quaternion;
+}
+
 const PARTICLE_COUNT = 8;
 const SLIDE_DURATION = 350;
 
@@ -38,14 +43,31 @@ export class PitView {
   private readonly colors: THREE.Color[];
   private pieceView: PieceView | null = null;
   private readonly walls: THREE.Group;
+  private gridLines: THREE.LineSegments | null = null;
+  private readonly solidGridMat: THREE.LineBasicMaterial;
+  private readonly dashedGridMat: THREE.LineDashedMaterial;
   private readonly sideCamera: THREE.PerspectiveCamera;
   private usingSideCamera = false;
   private crazyMode = false;
-  private crazyTime = 0;
+  private crazySegTime = 0;
+  private crazySegIndex = 0;
+  private crazySegDuration = 4;
+  private crazyElapsed = 0;
+  private readonly crazyMinSegDuration = 1.5;
+  private readonly crazyStartSegDuration = 4;
+  private readonly crazyRampUpTime = 30;
+  private crazyWaypoints: CrazyWaypoint[] = [];
+  private baseMainPos = new THREE.Vector3();
+  private baseMainQuat = new THREE.Quaternion();
+  private baseSidePos = new THREE.Vector3();
+  private baseSideQuat = new THREE.Quaternion();
+  private pitCenter = new THREE.Vector3();
   private shakeTime = 0;
   private shakeIntensity = 0;
   private readonly particles: Particle[] = [];
   private slideAnim: SlideAnim | null = null;
+  private readonly dirArrows: THREE.Group[];
+  private readonly dirLabels: THREE.Sprite[];
   onSlideComplete: (() => void) | null = null;
 
   constructor(config: PitConfig, originX: number) {
@@ -55,12 +77,31 @@ export class PitView {
 
     this.colors = PALETTE.map((c) => new THREE.Color(c));
 
+    this.solidGridMat = new THREE.LineBasicMaterial({
+      color: 0x808080,
+      transparent: true,
+      opacity: 0.5,
+    });
+    this.dashedGridMat = new THREE.LineDashedMaterial({
+      color: 0x808080,
+      transparent: true,
+      opacity: 0.5,
+      dashSize: 0.15,
+      gapSize: 0.1,
+    });
+
     const aspect = 1;
     this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 200);
     this.sideCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 200);
     this.sideCameras = this.buildSideCameras();
     this.sideLabels = ["Front", "Right", "Left", "Back"];
     this.positionCameras();
+    const { width: w0, depth: d0, height: h0 } = this.config;
+    this.pitCenter.set(this.group.position.x + (w0 - 1) / 2, h0 * 0.3, (d0 - 1) / 2);
+    this.baseMainPos.copy(this.camera.position);
+    this.baseMainQuat.copy(this.camera.quaternion);
+    this.baseSidePos.copy(this.sideCamera.position);
+    this.baseSideQuat.copy(this.sideCamera.quaternion);
 
     this.blockMesh = new BlockMesh(config, PALETTE.length);
     this.blockMesh.mesh.castShadow = true;
@@ -70,6 +111,103 @@ export class PitView {
 
     this.walls = this.buildWalls();
     this.group.add(this.walls);
+
+    const { arrows, labels } = this.buildDirArrows();
+    this.dirArrows = arrows;
+    this.dirLabels = labels;
+    arrows.forEach((a) => this.group.add(a));
+    labels.forEach((l) => this.group.add(l));
+    this.updateDirArrowsVisibility();
+  }
+
+  private buildDirArrows(): { arrows: THREE.Group[]; labels: THREE.Sprite[] } {
+    const { width: w, depth: d, height: h } = this.config;
+    const cx = this.group.position.x + (w - 1) / 2;
+    const cz = (d - 1) / 2;
+    const y = -0.4;
+    const arrowLen = 1.2;
+    const offset = 1.5;
+
+    const makeArrow = (dir: THREE.Vector3, pos: THREE.Vector3): THREE.Group => {
+      const grp = new THREE.Group();
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.7,
+        depthWrite: false,
+      });
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 8), mat);
+      cone.position.copy(dir.clone().multiplyScalar(arrowLen * 0.5));
+      cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, arrowLen * 0.7, 8), mat);
+      shaft.position.copy(dir.clone().multiplyScalar(arrowLen * 0.25));
+      shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      grp.add(cone);
+      grp.add(shaft);
+      grp.position.copy(pos);
+      return grp;
+    };
+
+    const makeLabel = (text: string, pos: THREE.Vector3): THREE.Sprite => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 128;
+      canvas.height = 64;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "rgba(56, 189, 248, 0.9)";
+        ctx.font = "bold 36px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, 64, 32);
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.needsUpdate = true;
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+      const sprite = new THREE.Sprite(mat);
+      sprite.position.copy(pos);
+      sprite.scale.set(1.5, 0.75, 1);
+      return sprite;
+    };
+
+    const dirs: { dir: THREE.Vector3; pos: THREE.Vector3; label: string }[] = [
+      {
+        dir: new THREE.Vector3(-1, 0, 0),
+        pos: new THREE.Vector3(cx - w / 2 - offset, y, cz),
+        label: "H",
+      },
+      {
+        dir: new THREE.Vector3(1, 0, 0),
+        pos: new THREE.Vector3(cx + w / 2 + offset, y, cz),
+        label: "L",
+      },
+      {
+        dir: new THREE.Vector3(0, 0, -1),
+        pos: new THREE.Vector3(cx, y, cz - d / 2 - offset),
+        label: "K",
+      },
+      {
+        dir: new THREE.Vector3(0, 0, 1),
+        pos: new THREE.Vector3(cx, y, cz + d / 2 + offset),
+        label: "J",
+      },
+    ];
+
+    const arrows = dirs.map((d) => makeArrow(d.dir, d.pos));
+    const labels = dirs.map((d) =>
+      makeLabel(d.label, d.pos.clone().add(new THREE.Vector3(0, 0.8, 0))),
+    );
+    void h;
+    return { arrows, labels };
+  }
+
+  private updateDirArrowsVisibility(): void {
+    const visible = this.crazyMode;
+    this.dirArrows.forEach((a) => {
+      a.visible = visible;
+    });
+    this.dirLabels.forEach((l) => {
+      l.visible = visible;
+    });
   }
 
   private buildSideCameras(): THREE.OrthographicCamera[] {
@@ -108,8 +246,14 @@ export class PitView {
     this.camera.lookAt(cx, 0, cz);
 
     const sideDist = Math.max(w, d, h) * 1.8;
-    this.sideCamera.position.set(cx + sideDist, cy, cz);
-    this.sideCamera.lookAt(cx, cy, cz);
+    const sideHoriz = sideDist * 0.7;
+    const sideAngle = (35 * Math.PI) / 180;
+    this.sideCamera.position.set(
+      cx + sideHoriz * Math.sin(sideAngle),
+      cy + sideDist * 0.5,
+      cz + sideHoriz * Math.cos(sideAngle),
+    );
+    this.sideCamera.lookAt(cx, h * 0.45, cz);
   }
 
   private buildWalls(): THREE.Group {
@@ -122,17 +266,12 @@ export class PitView {
       depthWrite: false,
     });
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x0f172a,
-      roughness: 0.9,
+      color: 0x3a4055,
+      roughness: 0.95,
       metalness: 0.0,
     });
     const edgeMat = new THREE.LineBasicMaterial({
       color: 0xc0c0c0,
-    });
-    const gridMat = new THREE.LineBasicMaterial({
-      color: 0x808080,
-      transparent: true,
-      opacity: 0.5,
     });
 
     const group = new THREE.Group();
@@ -159,7 +298,7 @@ export class PitView {
       group.add(wall);
     });
 
-    this.addWallGrid(group, gridMat, w, d, h);
+    this.addWallGrid(group, this.solidGridMat, w, d, h);
 
     const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d));
     const line = new THREE.LineSegments(edges, edgeMat);
@@ -205,20 +344,166 @@ export class PitView {
     }
 
     const geom = new THREE.BufferGeometry().setFromPoints(pts);
-    const grid = new THREE.LineSegments(geom, mat);
+    const grid = new THREE.LineSegments(geom, this.solidGridMat);
+    this.gridLines = grid;
     group.add(grid);
   }
 
   toggleCamera(): void {
     this.usingSideCamera = !this.usingSideCamera;
+    if (this.gridLines) {
+      if (this.usingSideCamera) {
+        this.gridLines.material = this.dashedGridMat;
+        this.gridLines.computeLineDistances();
+      } else {
+        this.gridLines.material = this.solidGridMat;
+      }
+    }
   }
 
   setCrazyMode(enabled: boolean): void {
     this.crazyMode = enabled;
-    if (!enabled) {
-      this.group.rotation.z = 0;
-      this.group.rotation.x = 0;
+    if (enabled) {
+      this.crazySegIndex = 1;
+      this.crazySegTime = 0;
+      this.crazyElapsed = 0;
+      this.crazySegDuration = this.crazyStartSegDuration;
+      this.crazyWaypoints = [];
+      const baseWaypoint: CrazyWaypoint = {
+        posOffset: this.baseMainPos.clone().sub(this.pitCenter),
+        quat: new THREE.Quaternion(),
+      };
+      this.crazyWaypoints.push(baseWaypoint);
+      for (let i = 0; i < 6; i++) {
+        this.crazyWaypoints.push(this.makeRandomWaypoint());
+      }
+    } else {
+      this.camera.position.copy(this.baseMainPos);
+      this.camera.quaternion.copy(this.baseMainQuat);
+      this.sideCamera.position.copy(this.baseSidePos);
+      this.sideCamera.quaternion.copy(this.baseSideQuat);
+      this.crazyWaypoints = [];
+      this.crazySegIndex = 0;
+      this.crazySegTime = 0;
+      this.crazyElapsed = 0;
     }
+    this.updateDirArrowsVisibility();
+  }
+
+  private makeRandomWaypoint(): CrazyWaypoint {
+    const MAX_ANGLE = 0.35;
+    const radius = Math.max(this.config.width, this.config.depth) * 4.0;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI * 0.45;
+    const posOffset = new THREE.Vector3(
+      Math.sin(phi) * Math.cos(theta) * radius,
+      Math.cos(phi) * radius * 0.3,
+      Math.sin(phi) * Math.sin(theta) * radius,
+    );
+    const axis = new THREE.Vector3(
+      Math.random() * 2 - 1,
+      Math.random() * 2 - 1,
+      Math.random() * 2 - 1,
+    ).normalize();
+    const angle = (Math.random() * 2 - 1) * MAX_ANGLE;
+    const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    return { posOffset, quat };
+  }
+
+  private crazyInterpolate(
+    segIndex: number,
+    segT: number,
+  ): {
+    pos: THREE.Vector3;
+    quat: THREE.Quaternion;
+  } {
+    const wps = this.crazyWaypoints;
+    const n = wps.length;
+    if (n < 2) {
+      const wp = wps[0];
+      return {
+        pos: wp ? wp.posOffset.clone() : new THREE.Vector3(),
+        quat: wp ? wp.quat.clone() : new THREE.Quaternion(),
+      };
+    }
+    const i0 = Math.max(0, Math.min(segIndex - 1, n - 1));
+    const i1 = Math.max(0, Math.min(segIndex, n - 1));
+    const i2 = Math.max(0, Math.min(segIndex + 1, n - 1));
+    const i3 = Math.max(0, Math.min(segIndex + 2, n - 1));
+    const p0 = wps[i0] ?? wps[i1];
+    const p1 = wps[i1] ?? wps[0];
+    const p2 = wps[i2] ?? p1;
+    const p3 = wps[i3] ?? p2;
+    if (!p0 || !p1 || !p2 || !p3) {
+      return { pos: new THREE.Vector3(), quat: new THREE.Quaternion() };
+    }
+    const t2 = segT * segT;
+    const t3 = t2 * segT;
+    const pos = new THREE.Vector3();
+    pos.x =
+      0.5 *
+      (2 * p1.posOffset.x +
+        (-p0.posOffset.x + p2.posOffset.x) * segT +
+        (2 * p0.posOffset.x - 5 * p1.posOffset.x + 4 * p2.posOffset.x - p3.posOffset.x) * t2 +
+        (-p0.posOffset.x + 3 * p1.posOffset.x - 3 * p2.posOffset.x + p3.posOffset.x) * t3);
+    pos.y =
+      0.5 *
+      (2 * p1.posOffset.y +
+        (-p0.posOffset.y + p2.posOffset.y) * segT +
+        (2 * p0.posOffset.y - 5 * p1.posOffset.y + 4 * p2.posOffset.y - p3.posOffset.y) * t2 +
+        (-p0.posOffset.y + 3 * p1.posOffset.y - 3 * p2.posOffset.y + p3.posOffset.y) * t3);
+    pos.z =
+      0.5 *
+      (2 * p1.posOffset.z +
+        (-p0.posOffset.z + p2.posOffset.z) * segT +
+        (2 * p0.posOffset.z - 5 * p1.posOffset.z + 4 * p2.posOffset.z - p3.posOffset.z) * t2 +
+        (-p0.posOffset.z + 3 * p1.posOffset.z - 3 * p2.posOffset.z + p3.posOffset.z) * t3);
+    const targetRadius = Math.max(this.config.width, this.config.depth) * 4.0;
+    const minRadius = targetRadius * 0.9;
+    const posLen = pos.length();
+    if (posLen > 0.001) {
+      const minLen = Math.max(posLen, minRadius);
+      pos.multiplyScalar(minLen / posLen);
+    }
+    const smoothT = segT * segT * (3 - 2 * segT);
+    const quat = new THREE.Quaternion().slerpQuaternions(p1.quat, p2.quat, smoothT);
+    return { pos, quat };
+  }
+
+  private static readonly CAM_FORWARD = new THREE.Vector3(0, 0, -1);
+  private static readonly WORLD_UP = new THREE.Vector3(0, 1, 0);
+
+  private lookAtQuat(fromPos: THREE.Vector3, target: THREE.Vector3): THREE.Quaternion {
+    const m = new THREE.Matrix4();
+    m.lookAt(fromPos, target, PitView.WORLD_UP);
+    return new THREE.Quaternion().setFromRotationMatrix(m);
+  }
+
+  private updateCrazy(dt: number): void {
+    if (!this.crazyMode || this.crazyWaypoints.length < 4) return;
+    const dtSec = dt / 1000;
+    this.crazyElapsed += dtSec;
+    this.crazySegTime += dtSec;
+    if (this.crazySegTime >= this.crazySegDuration) {
+      this.crazySegTime -= this.crazySegDuration;
+      this.crazyWaypoints.shift();
+      this.crazyWaypoints.push(this.makeRandomWaypoint());
+    }
+    const rampProgress = Math.min(this.crazyElapsed / this.crazyRampUpTime, 1);
+    const easedRamp = rampProgress * rampProgress * (3 - 2 * rampProgress);
+    this.crazySegDuration =
+      this.crazyStartSegDuration +
+      (this.crazyMinSegDuration - this.crazyStartSegDuration) * easedRamp;
+    const segT = this.crazySegTime / this.crazySegDuration;
+    const { pos, quat } = this.crazyInterpolate(this.crazySegIndex, segT);
+    const mainPos = this.pitCenter.clone().add(pos);
+    this.camera.position.copy(mainPos);
+    const baseLook = this.lookAtQuat(mainPos, this.pitCenter);
+    this.camera.quaternion.copy(baseLook.multiply(quat));
+    const sidePos = this.baseSidePos.clone().add(pos.clone().multiplyScalar(0.5));
+    this.sideCamera.position.copy(sidePos);
+    const sideLook = this.lookAtQuat(sidePos, this.pitCenter);
+    this.sideCamera.quaternion.copy(sideLook.multiply(quat));
   }
 
   triggerShake(intensity: number): void {
@@ -343,6 +628,7 @@ export class PitView {
   }
 
   tick(dt: number): void {
+    this.updateCrazy(dt);
     this.updateParticles(dt);
     this.updateSlide(dt);
     this.updateShake(dt);
@@ -386,13 +672,6 @@ export class PitView {
       this.blockMesh.update(grid, this.colors);
     }
 
-    if (this.crazyMode) {
-      const dt = 0.016;
-      this.crazyTime += dt;
-      this.group.rotation.z = Math.sin(this.crazyTime * 0.5) * 0.15;
-      this.group.rotation.x = Math.sin(this.crazyTime * 0.3) * 0.08;
-    }
-
     const state = engine.state();
     const active = state.active;
     if (!active) {
@@ -426,6 +705,19 @@ export class PitView {
   setMainViewShift(shift: number): void {
     const m = this.camera.projectionMatrix.elements;
     m[8] = shift;
+  }
+
+  setSideViewShift(shift: number): void {
+    const m = this.sideCamera.projectionMatrix.elements;
+    m[8] = shift;
+  }
+
+  applyViewShift(shift: number): void {
+    if (this.usingSideCamera) {
+      this.setSideViewShift(shift);
+    } else {
+      this.setMainViewShift(shift);
+    }
   }
 
   setSideAspect(aspect: number): void {

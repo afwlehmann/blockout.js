@@ -109,6 +109,10 @@ export class SplitScreenLayout {
     return (this.cachedTargets ??= this.buildTargets());
   }
 
+  invalidateCache(): void {
+    this.cachedTargets = null;
+  }
+
   get regions(): readonly ViewportRegion[] {
     return this.targets.map((t) => t.region);
   }
@@ -137,7 +141,7 @@ export class SplitScreenLayout {
           const viewportCenter = MAIN_WIDTH / 2;
           const screenCenter = 0.5;
           const ndcShift = ((viewportCenter - screenCenter) / MAIN_WIDTH) * 2;
-          target.pitView.setMainViewShift(ndcShift);
+          target.pitView.applyViewShift(ndcShift);
         }
       } else {
         target.pitView.setSideAspect(w / h);
