@@ -386,6 +386,7 @@ const cleanupSession = (): void => {
     rafId = null;
   }
   if (currentSession) {
+    currentSession.layout.dispose();
     currentSession.cleanup.forEach((fn) => {
       fn();
     });

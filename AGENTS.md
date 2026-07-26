@@ -128,8 +128,15 @@ Keys are remappable via the in-menu Controls panel (P1/P2 tabs).
 - **Next-piece preview**: 2D canvas in HUD, updated each frame
 - **High scores**: localStorage top-10, displayed on game-over screen
 - **Key remap**: per-player interactive rebinding with live display
-- **Camera toggle**: angled top-down ↔ side view (C or R)
-- **Full shadows**: PCFSoftShadowMap on all meshes
+- **Camera toggle**: angled top-down ↔ side view (C or R). The top-down
+  camera is positioned directly above the pit center, looking straight
+  down at the **bottom center** of the pit (`y = 0`), so the bottom
+  center is always aligned with the middle of the screen.
+- **Side views (1P only)**: 4 orthogonal views (Front, Right, Left,
+  Back) in a 2×2 grid on the right side of the screen, with labels at
+  the top of each view.
+- **Full shadows**: PCFSoftShadowMap on all meshes, key light directly
+  above so shadows fall straight down
 - **Audio**: SID-style synth with filter sweeps, original 3-min chiptune
   (130 BPM, A phrygian dominant, 4-section A-B-A'-C structure),
   Twintris-style escalating clear SFX, move/rotate SFX, thud on
