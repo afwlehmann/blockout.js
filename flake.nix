@@ -32,6 +32,7 @@
             eslint = {
               enable = true;
               package = nixpkgs.legacyPackages.${system}.eslint;
+              settings.extensions = "\\.(js|ts)$";
             };
             prettier = {
               enable = true;
