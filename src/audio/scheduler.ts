@@ -13,6 +13,7 @@ export interface NoiseEvent {
   readonly filterFreq: number;
   readonly volume: number;
   readonly duration: number;
+  readonly filterType?: BiquadFilterType;
 }
 
 export interface FilterEvent {
@@ -57,6 +58,24 @@ export class Scheduler {
     this.tick();
   }
 
+  resume(): void {
+    if (this.running) return;
+    const elapsed = this.currentLoopOffset();
+    this.loopStart = this.synth.currentTime + 0.05 - elapsed;
+    this.running = true;
+    this.tick();
+  }
+
+  private currentLoopOffset(): number {
+    const note = this.track.notes[this.nextNoteIndex];
+    const noise = this.track.noise[this.nextNoiseIndex];
+    const filter = this.track.filter[this.nextFilterIndex];
+    const noteTime = note ? note.time : this.track.loopLength;
+    const noiseTime = noise ? noise.time : this.track.loopLength;
+    const filterTime = filter ? filter.time : this.track.loopLength;
+    return Math.min(noteTime, noiseTime, filterTime);
+  }
+
   stop(): void {
     this.running = false;
     if (this.timerId !== null) {
@@ -84,7 +103,13 @@ export class Scheduler {
       if (!event) break;
       const eventTime = this.loopStart + event.time;
       if (eventTime > horizon) break;
-      this.synth.playNoise(event.duration, event.filterFreq, event.volume, eventTime);
+      this.synth.playNoise(
+        event.duration,
+        event.filterFreq,
+        event.volume,
+        eventTime,
+        event.filterType,
+      );
       this.nextNoiseIndex++;
     }
 

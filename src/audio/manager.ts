@@ -60,6 +60,16 @@ export class AudioManager {
     this.scheduler.stop();
   }
 
+  pauseMusic(): void {
+    if (!this.scheduler) return;
+    this.scheduler.stop();
+  }
+
+  resumeMusic(): void {
+    if (!this.scheduler || this.musicMuted || !this.musicPlaying) return;
+    this.scheduler.resume();
+  }
+
   playSfx(type: SfxType, intensity = 0): void {
     this.ensureContext();
     this.sfx?.play(type, intensity);
