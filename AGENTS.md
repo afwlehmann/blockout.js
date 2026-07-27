@@ -67,7 +67,7 @@ src/
 │   ├── keyboard.ts KeyBinding (multi-key), layouts, DAS repeat, lookup
 │   └── input.ts    InputSource facade
 ├── render/         Three.js rendering
-│   ├── scene.ts    Scene, lights, shadows, resize
+│   ├── scene.ts    Scene, lights, shadows, resize, SpaceEnv (starfield + cube planets)
 │   ├── blockMesh.ts  InstancedMesh for locked cells + slide animation
 │   ├── pieceView.ts  Active piece + ghost piece rendering
 │   ├── pitView.ts   Pit view: cameras, walls, particles, slide animation
@@ -150,6 +150,20 @@ columns + shared Global Controls section).
   slide-down impact, dual SFX/music mutes
 - **Explosion + slide-down**: cleared layers explode into particles,
   upper blocks slide down with eased animation and thud on impact
+- **Single-file HTML build**: `vite-plugin-singlefile` produces a
+  self-contained `dist/index.html` (~583 kB) openable via `file://`
+- **Screen shake on hard drop**: PitView random Y/Z offset decaying over
+  400ms, intensity scales with drop distance; rumble SFX (35 Hz sawtooth
+  - 17.5 Hz sine + noise, volume/duration scale with drop distance)
+- **Spacey 3D environment**: starfield (`THREE.Points`) + cube planets
+  (`BoxGeometry`) with slow rotation, built in `scene.ts:populateSpaceEnv`
+- **All-clear bonus**: 10,000-point bonus ("blockout") when a layer clear
+  empties the entire pit (`ALL_CLEAR_BONUS` in `engine.ts`)
+- **Menu fade-out / game fade-in**: menu panel fades out (0.4s) on Start,
+  game canvas fades in (0.4s ease-out)
+- **HUD level progress bar**: per-player progress toward next level
+- **Exit-to-menu confirmation**: Esc triggers a confirm dialog before
+  abandoning the current game
 
 ## Versioning
 

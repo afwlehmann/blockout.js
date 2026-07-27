@@ -7,9 +7,23 @@ original Blockout (1989) keyboard mapping, SID-style chiptune music
 (Giana Sisters / Turrican inspired), and explosion + slide-down animations
 on layer clears.
 
-Built with TypeScript, Three.js, and Vite. Game logic is fully unit-tested
-with Vitest (51 tests); the Nix flake provides a reproducible dev shell
-and production build.
+Built with TypeScript, Three.js, and Vite.
+
+## Play
+
+Build a single self-contained `dist/index.html` (no server required —
+open it via `file://`):
+
+```sh
+npm install
+npm run build
+```
+
+For live development with hot reload:
+
+```sh
+npm run dev
+```
 
 ## Features
 
@@ -18,16 +32,26 @@ and production build.
 - **3 difficulties**: Easy, Normal, Hard
 - **2-player split-screen**: shared piece sequence, face-clear raises
   opponent's stack, win by target faces or KO
-- **Crazy Mode**: pit view rotates on a sine wave
+- **Crazy Mode (1P only)**: camera-based quaternion spline on the upper
+  hemisphere, sliding window of 7 CatmullRom waypoints, speed ramps
+  4s → 1.5s over 30s
 - **Original Blockout controls**: QWE/ASD rotation, HJKL + arrow keys for
   movement, Space hard drop
 - **SID-style audio**: 3-voice WebAudio synth with filter sweeps, original
   3-minute chiptune (130 BPM, A phrygian dominant), Twintris-style
-  escalating clear SFX, move/rotate SFX, thud on slide-down impact
+  escalating clear SFX, move/rotate SFX, thud on slide-down impact,
+  dual SFX/music mutes
 - **Explosion + slide-down**: cleared layers explode into particles,
-  upper blocks slide down with eased animation
+  upper blocks slide down with eased animation and thud on impact
+- **Screen shake** on hard drop (scales with drop distance) plus low-rumble SFX
+- **Spacey 3D environment**: rotating starfield and cube planets around the pit
+- **10,000-point all-clear bonus** ("blockout") when a layer clear empties the pit
+- **Menu fade-out / game fade-in** transitions on Start
+- **HUD level progress bar**
+- **Exit-to-menu confirmation** dialog (Esc)
 - **Next-piece preview**, **high scores** (localStorage top-10),
-  **key remap** (per-player), **camera toggle**, **full shadows**
+  **key remap** (per-player), **camera toggle**, **side views** (4-way
+  orthogonal grid), **full shadows** (VSMShadowMap)
 
 ## Controls
 
@@ -41,7 +65,8 @@ and production build.
 | Rotate Z (spin) | E (CCW) / D (CW)  |
 | Hard drop       | Space             |
 | Soft drop       | Left Shift        |
-| Pause           | Esc               |
+| Pause           | P                 |
+| Exit to Menu    | Esc (confirms)    |
 | Camera toggle   | C                 |
 | Toggle SFX      | O                 |
 | Toggle Music    | M                 |
@@ -63,28 +88,6 @@ and production build.
 
 Keys are remappable via the in-menu Controls panel (side-by-side P1/P2
 columns + shared Global Controls section).
-
-## Verify commands
-
-| Command                | Description                                 |
-| ---------------------- | ------------------------------------------- |
-| `npm run dev`          | Vite dev server                             |
-| `npm run typecheck`    | TypeScript typecheck (strict)               |
-| `npm test`             | Run unit tests (Vitest)                     |
-| `npm run lint`         | ESLint                                      |
-| `npm run format`       | Prettier format                             |
-| `npm run format:check` | Prettier check                              |
-| `npm run build`        | Typecheck + production build                |
-| `nix develop`          | Enter dev shell (Node.js + tooling + hooks) |
-| `nix build`            | Build the production package (runs checks)  |
-| `nix flake check`      | Sandboxed pre-commit hooks + package build  |
-| `nix fmt`              | Format `.nix` files with nixfmt             |
-
-## Versioning
-
-The flake version is read from `package.json` at evaluation time — bump the
-version in `package.json` and the Nix package and dev shell pick it up
-automatically. No separate version field exists in `flake.nix`.
 
 ## License
 
