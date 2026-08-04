@@ -192,12 +192,14 @@ export class Menu implements UiElement {
   }
 
   private title(): HTMLElement {
-    const h1 = create("h1", "bo-title");
-    h1.textContent = "blockout.js";
+    const img = create("img", "bo-title-img");
+    img.src = `${import.meta.env.BASE_URL}blockout-title.png`;
+    img.alt = "blockout.js";
     const p = create("p", "bo-subtitle");
     p.textContent = "A tribute to Blockout (1989) by Michael Kosh — the original 3D Tetris";
+    p.style.textAlign = "center";
     const frag = create("div");
-    frag.appendChild(h1);
+    frag.appendChild(img);
     frag.appendChild(p);
     return frag;
   }

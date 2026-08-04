@@ -3,6 +3,10 @@
 [![CI](https://github.com/afwlehmann/blockout.js/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/afwlehmann/blockout.js/actions/workflows/ci.yml)
 [![Play](https://img.shields.io/badge/play-online-brightgreen)](https://afwlehmann.github.io/blockout.js/)
 
+<p align="center">
+  <img src="public/blockout-title.png" alt="blockout.js" width="480">
+</p>
+
 A browser-based 3D Tetris (Blockout) game with split-screen 2-player mode,
 original Blockout (1989) keyboard mapping, MP3 chiptune-style music
 (Giana Sisters / Turrican inspired), and explosion + slide-down animations

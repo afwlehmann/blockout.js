@@ -78,6 +78,12 @@ export const injectStyles = (): void => {
       -webkit-text-fill-color: transparent;
       letter-spacing: -0.02em;
     }
+    .bo-title-img {
+      width: 100%;
+      height: auto;
+      margin: 0 0 0.5rem;
+      display: block;
+    }
     .bo-subtitle {
       font-size: 0.95rem;
       color: #94a3b8;
