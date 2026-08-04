@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────
-  # Dependencies — install once, cache for downstream jobs
+  # Dependencies — install once, cache node_modules for downstream jobs
   # ─────────────────────────────────────────────────────────────────────
   deps:
     name: Dependencies
@@ -31,6 +31,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v22
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          determinate: false
+
+      - name: Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v14
+        with:
+          use-flakehub: false
 
       - name: Cache node_modules
         id: cache
@@ -59,6 +65,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v22
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          determinate: false
+
+      - name: Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v14
+        with:
+          use-flakehub: false
 
       - name: Restore node_modules
         uses: actions/cache@v6
@@ -94,6 +106,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v22
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          determinate: false
+
+      - name: Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v14
+        with:
+          use-flakehub: false
 
       - name: Restore node_modules
         uses: actions/cache@v6
@@ -112,7 +130,7 @@ jobs:
         run: nix develop -c npm run typecheck
 
       - name: Nixfmt
-        run: nix develop -c nixfmt -c **/*.nix
+        run: nix develop -c nixfmt -c $(git ls-files '*.nix')
 
       - name: Convco
         run: nix develop -c convco check
@@ -131,6 +149,12 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v22
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          determinate: false
+
+      - name: Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v14
+        with:
+          use-flakehub: false
 
       - name: Restore node_modules
         uses: actions/cache@v6
@@ -186,6 +210,8 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
+        with:
+          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

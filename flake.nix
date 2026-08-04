@@ -90,6 +90,7 @@
               pkgs.nodejs_22
               pkgs.git
               pkgs.nixfmt
+              pkgs.gh
             ];
             shellHook = ''
               ${shellHook}
