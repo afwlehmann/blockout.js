@@ -132,10 +132,49 @@ const stopAmbient = (): void => {
   state.ambientActive = false;
 };
 
+const MUSIC_HINT_ID = "bo-music-hint";
+
+const showMusicHint = (): void => {
+  if (document.getElementById(MUSIC_HINT_ID)) return;
+  const hint = create("div", "bo-music-hint");
+  hint.id = MUSIC_HINT_ID;
+  hint.textContent = "Press any key to start the music";
+  hint.style.cssText =
+    "position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);" +
+    "padding:0.5rem 1rem;background:rgba(1,1,10,0.8);color:#9aa0c0;" +
+    "font-size:0.85rem;border-radius:0.4rem;z-index:50;pointer-events:none;" +
+    "animation:bo-fade-in 0.3s ease-out;";
+  document.body.appendChild(hint);
+};
+
+const hideMusicHint = (): void => {
+  const hint = document.getElementById(MUSIC_HINT_ID);
+  if (hint) hint.remove();
+};
+
+const musicInteractionHandler = (): void => {
+  window.removeEventListener("keydown", musicInteractionHandler);
+  window.removeEventListener("pointerdown", musicInteractionHandler);
+  hideMusicHint();
+  void audio.resume().then(() => {
+    void audio.startMenuMusic();
+  });
+};
+
+const startMenuMusicOnInteraction = (): void => {
+  if (audio.isMusicMuted()) return;
+  if (document.getElementById(MUSIC_HINT_ID)) return;
+  showMusicHint();
+  window.addEventListener("keydown", musicInteractionHandler);
+  window.addEventListener("pointerdown", musicInteractionHandler);
+};
+
 const startMenu = (): void => {
   if (state.menu) return;
   cleanupSession();
-  audio.stopMusic();
+  void audio.stopMusic().then(() => {
+    startMenuMusicOnInteraction();
+  });
   startAmbient();
   state.menu = new Menu();
   state.menu.onStart(({ config, crazyMode }) => {
@@ -346,8 +385,12 @@ const startGame = (config: MatchConfig, crazyMode: boolean): void => {
   state.hud.setSoundEnabled(!audio.isSfxMuted());
   state.hud.setMusicEnabled(!audio.isMusicMuted());
 
-  void audio.resume();
-  audio.startMusic();
+  hideMusicHint();
+  window.removeEventListener("keydown", musicInteractionHandler);
+  window.removeEventListener("pointerdown", musicInteractionHandler);
+  void audio.resume().then(() => {
+    void audio.transitionToGameMusic();
+  });
 
   state.lastFrame = performance.now();
   state.rafId = requestAnimationFrame(loop);

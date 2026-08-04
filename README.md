@@ -1,15 +1,24 @@
 # blockout.js
 
 [![CI](https://github.com/afwlehmann/blockout.js/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/afwlehmann/blockout.js/actions/workflows/ci.yml)
+[![Play](https://img.shields.io/badge/play-online-brightgreen)](https://afwlehmann.github.io/blockout.js/)
 
 A browser-based 3D Tetris (Blockout) game with split-screen 2-player mode,
-original Blockout (1989) keyboard mapping, SID-style chiptune music
+original Blockout (1989) keyboard mapping, MP3 chiptune-style music
 (Giana Sisters / Turrican inspired), and explosion + slide-down animations
 on layer clears.
 
 Built with TypeScript, Three.js, and Vite.
 
-## Play
+## Play online
+
+A live build is deployed to GitHub Pages from every push to `main`:
+
+**→ https://afwlehmann.github.io/blockout.js/**
+
+Click the link, press any key to enable audio, then `Enter` to start.
+
+## Play locally
 
 Build a single self-contained `dist/index.html` (no server required —
 open it via `file://`):
@@ -37,8 +46,8 @@ npm run dev
   4s → 1.5s over 30s
 - **Original Blockout controls**: QWE/ASD rotation, HJKL + arrow keys for
   movement, Space hard drop
-- **SID-style audio**: 3-voice WebAudio synth with filter sweeps, original
-  3-minute chiptune (130 BPM, A phrygian dominant), Twintris-style
+- **SID-style audio**: 3-voice WebAudio synth with filter sweeps (used for
+  SFX), MP3 chiptune-style music (menu + game tracks), Twintris-style
   escalating clear SFX, move/rotate SFX, thud on slide-down impact,
   dual SFX/music mutes
 - **Explosion + slide-down**: cleared layers explode into particles,

@@ -49,12 +49,11 @@ If Nix is not installed, fall back to `npm ci` and use the local Node.js.
 
 ```
 src/
-├── audio/          SID synth, music scheduler, SFX, track data
+├── audio/          SID synth, MP3 music player, SFX
 │   ├── sid.ts      WebAudio SID-style synth (3 voices, filter, noise)
-│   ├── scheduler.ts  Lookahead scheduler with filter automation
-│   ├── track.ts    Original 3-min chiptune (130 BPM, A phrygian dominant)
+│   ├── musicPlayer.ts  HTMLAudioElement + GainNode fade in/out, shuffled queue
 │   ├── sfx.ts      Twintris-style escalating SFX + move/rotate/thud
-│   └── manager.ts  AudioManager with dual SFX/music mutes (localStorage)
+│   └── manager.ts  AudioManager: MP3 menu/game music + SFX (dual mute, localStorage)
 ├── game/           Game logic (fully unit-tested)
 │   ├── types.ts    Core types: PlayerId, PieceDef, MatchConfig, etc.
 │   ├── pieces.ts   Polycube definitions + 24-orientation rotation tables
@@ -144,10 +143,11 @@ columns + shared Global Controls section).
   the top of each view.
 - **Full shadows**: VSMShadowMap on all meshes, key light directly
   above so shadows fall straight down
-- **Audio**: SID-style synth with filter sweeps, original 3-min chiptune
-  (130 BPM, A phrygian dominant, 4-section A-B-A'-C structure),
-  Twintris-style escalating clear SFX, move/rotate SFX, thud on
-  slide-down impact, dual SFX/music mutes
+- **Audio**: SID-style synth with filter sweeps (used for SFX), MP3 music
+  (menu track `blockout-bricks-1` with 0.5s fade in/out, game track
+  `blockout-bricks-2` on loop), Twintris-style escalating clear SFX,
+  move/rotate SFX, thud on slide-down impact, dual SFX/music mutes.
+  Menu music starts on first user interaction (autoplay-policy compliant).
 - **Explosion + slide-down**: cleared layers explode into particles,
   upper blocks slide down with eased animation and thud on impact
 - **Single-file HTML build**: `vite-plugin-singlefile` produces a

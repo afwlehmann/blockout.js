@@ -3,6 +3,7 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 
 export default defineConfig({
   root: ".",
+  base: "./",
   publicDir: "public",
   build: {
     target: "es2022",

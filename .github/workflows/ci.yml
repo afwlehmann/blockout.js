@@ -5,74 +5,193 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
+  # ─────────────────────────────────────────────────────────────────────
+  # Dependencies — install once, cache for downstream jobs
+  # ─────────────────────────────────────────────────────────────────────
+  deps:
+    name: Dependencies
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache node_modules
+        id: cache
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: nix develop -c npm ci
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Build
+  # ─────────────────────────────────────────────────────────────────────
   build:
-    name: build
-    runs-on: ubuntu-latest
+    name: Build
+    needs: deps
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-      - run: nix develop -c npm ci
-      - run: nix develop -c npm run build
 
-  lint-eslint:
-    name: lint / eslint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: cachix/install-nix-action@v31
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-      - run: nix develop -c npm ci
-      - run: nix develop -c npm run lint
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  lint-prettier:
-    name: lint / prettier
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: cachix/install-nix-action@v31
+      - name: Restore node_modules
+        uses: actions/cache@v6
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-      - run: nix develop -c npm ci
-      - run: nix develop -c npm run format:check
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
 
-  lint-nixfmt:
-    name: lint / nixfmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: cachix/install-nix-action@v31
+      - name: Build
+        run: nix develop -c npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-      - run: nix develop -c nixfmt -c **/*.nix
+          name: blockout-dist
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
 
-  lint-convco:
-    name: lint / convco
-    runs-on: ubuntu-latest
+  # ─────────────────────────────────────────────────────────────────────
+  # Lint
+  # ─────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    needs: deps
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-      - run: nix develop -c convco check
 
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore node_modules
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+
+      - name: Lint
+        run: nix develop -c npm run lint
+
+      - name: Format check
+        run: nix develop -c npm run format:check
+
+      - name: Typecheck
+        run: nix develop -c npm run typecheck
+
+      - name: Nixfmt
+        run: nix develop -c nixfmt -c **/*.nix
+
+      - name: Convco
+        run: nix develop -c convco check
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Test
+  # ─────────────────────────────────────────────────────────────────────
   test:
-    name: test
-    runs-on: ubuntu-latest
-    needs: build
+    name: Test
+    needs: deps
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: cachix/install-nix-action@v31
+      - uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-      - run: nix develop -c npm ci
-      - run: nix develop -c npm run typecheck
-      - run: nix develop -c npm test
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore node_modules
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+
+      - name: Test
+        run: nix develop -c npm test
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Publish — deploy the built artifact to GitHub Pages
+  # ─────────────────────────────────────────────────────────────────────
+  publish:
+    name: Publish
+    needs: [build, lint, test]
+    runs-on: ubuntu-24.04
+    # Only publish on the default branch; PRs build but don't deploy.
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: blockout-dist
+          path: dist/
+
+      - name: Package distribution archive
+        run: |
+          tar -czf blockout-${{ github.sha }}.tar.gz -C dist .
+          zip -r -q blockout-${{ github.sha }}.zip dist/
+
+      - name: Upload release artifact (tar.gz)
+        uses: actions/upload-artifact@v7
+        with:
+          name: blockout-${{ github.sha }}-tarball
+          path: blockout-${{ github.sha }}.tar.gz
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Upload release artifact (zip)
+        uses: actions/upload-artifact@v7
+        with:
+          name: blockout-${{ github.sha }}-zip
+          path: blockout-${{ github.sha }}.zip
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v5
